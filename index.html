@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plumb | True Alignment. Zero Risk.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --black: #08080a;
+            --black-light: #0d0d10;
+            --surface: #141418;
+            --surface-elevated: #1a1a1f;
+            --border: #262630;
+            --border-light: #32323e;
+            --text-primary: #f5f5f7;
+            --text-secondary: #9898a6;
+            --text-muted: #5c5c6d;
+            --amber: #f0a500;
+            --amber-dim: #c48800;
+            --amber-glow: rgba(240, 165, 0, 0.15);
+            --amber-glow-strong: rgba(240, 165, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, sans-serif;
+            background: var(--black);
+            color: var(--text-secondary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .serif {
+            font-family: 'Instrument Serif', Georgia, serif;
+        }
+
+        /* Noise Texture Overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.025;
+            pointer-events: none;
+            z-index: 10000;
+        }
+
+        /* Grid Pattern Background */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 80px 80px;
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1.5rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(180deg, var(--black) 0%, transparent 100%);
+            transition: all 0.4s ease;
+        }
+
+        nav.scrolled {
+            background: rgba(8, 8, 10, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        .logo-mark {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--amber) 0%, var(--amber-dim) 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--black);
+            font-size: 1.1rem;
+            box-shadow: 0 0 30px var(--amber-glow);
+        }
+
+        .logo-text {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .logo-text span {
+            color: var(--amber);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--amber);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--amber) 0%, var(--amber-dim) 100%);
+            color: var(--black);
+            box-shadow: 0 4px 20px var(--amber-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--amber-glow-strong);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--amber);
+            background: var(--surface-elevated);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 8rem 3rem 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-glow {
+            position: absolute;
+            top: 20%;
+            right: 10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--amber-glow) 0%, transparent 70%);
+            filter: blur(80px);
+            pointer-events: none;
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+
+        .hero-content {
+            max-width: 900px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.8s ease forwards;
+        }
+
+        .hero-badge .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--amber);
+            border-radius: 50%;
+            animation: blink 2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+            margin-bottom: 1.5rem;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 0.8s ease forwards 0.1s;
+        }
+
+        .hero h1 .serif {
+            font-weight: 400;
+            font-style: italic;
+        }
+
+        .hero h1 .highlight {
+            color: var(--amber);
+            position: relative;
+        }
+
+        .hero-description {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 2.5rem;
+            line-height: 1.7;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 0.8s ease forwards 0.2s;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 0.8s ease forwards 0.3s;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 4rem;
+            margin-top: 5rem;
+            padding-top: 3rem;
+            border-top: 1px solid var(--border);
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 0.8s ease forwards 0.4s;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .stat-value span {
+            color: var(--amber);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* Section Styles */
+        section {
+            padding: 8rem 3rem;
+            position: relative;
+        }
+
+        .section-header {
+            max-width: 700px;
+            margin-bottom: 4rem;
+        }
+
+        .section-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--amber);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 1rem;
+        }
+
+        .section-tag::before {
+            content: '';
+            width: 20px;
+            height: 1px;
+            background: var(--amber);
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+        }
+
+        .section-description {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* Problem Section */
+        .problem {
+            background: var(--black-light);
+        }
+
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .problem-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.4s ease;
+            opacity: 0;
+            transform: translateY(40px);
+        }
+
+        .problem-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .problem-card:hover {
+            border-color: var(--border-light);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+
+        .problem-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--amber-glow);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .problem-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .problem-card p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* How It Works Section */
+        .process {
+            background: var(--black);
+        }
+
+        .process-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            max-width: 800px;
+        }
+
+        .process-step {
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            gap: 2rem;
+            padding: 2.5rem 0;
+            border-bottom: 1px solid var(--border);
+            opacity: 0;
+            transform: translateX(-30px);
+            transition: all 0.6s ease;
+        }
+
+        .process-step.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .process-step:last-child {
+            border-bottom: none;
+        }
+
+        .step-number {
+            width: 48px;
+            height: 48px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--amber);
+            transition: all 0.3s ease;
+        }
+
+        .process-step:hover .step-number {
+            background: var(--amber);
+            color: var(--black);
+            border-color: var(--amber);
+            box-shadow: 0 0 30px var(--amber-glow);
+        }
+
+        .step-content h3 {
+            font-size: 1.35rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .step-content p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Features Section */
+        .features {
+            background: var(--black-light);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .feature-card {
+            background: var(--surface);
+            padding: 2.5rem;
+            transition: all 0.4s ease;
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        .feature-card.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .feature-card:hover {
+            background: var(--surface-elevated);
+        }
+
+        .feature-number {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.1em;
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Pricing Section */
+        .pricing {
+            background: var(--black);
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            max-width: 1100px;
+        }
+
+        .pricing-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            transition: all 0.4s ease;
+            opacity: 0;
+            transform: translateY(40px);
+        }
+
+        .pricing-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .pricing-card.featured {
+            border-color: var(--amber);
+            box-shadow: 0 0 60px var(--amber-glow);
+            position: relative;
+        }
+
+        .pricing-card.featured::before {
+            content: 'Most Popular';
+            position: absolute;
+            top: -12px;
+            left: 2rem;
+            background: var(--amber);
+            color: var(--black);
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.35rem 0.75rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .pricing-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .pricing-price {
+            font-size: 3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            letter-spacing: -0.02em;
+        }
+
+        .pricing-price span {
+            font-size: 1rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .pricing-description {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-features li {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .pricing-features li::before {
+            content: '→';
+            color: var(--amber);
+            font-weight: 600;
+        }
+
+        .pricing-card .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* CTA Section */
+        .cta {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .cta-content {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .cta h2 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .cta p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--black);
+            padding: 4rem 3rem 2rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-brand {
+            max-width: 300px;
+        }
+
+        .footer-brand p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 1rem;
+            line-height: 1.6;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 4rem;
+        }
+
+        .footer-column h4 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+        }
+
+        .footer-column ul {
+            list-style: none;
+        }
+
+        .footer-column li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-column a {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-column a:hover {
+            color: var(--amber);
+        }
+
+        .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                padding: 1rem 1.5rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .hero, section {
+                padding: 6rem 1.5rem;
+            }
+
+            .hero-stats {
+                flex-direction: column;
+                gap: 2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .process-step {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .footer-content {
+                flex-direction: column;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 2rem;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+        }
+
+        /* Scroll reveal base */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-bg"></div>
+
+    <!-- Navigation -->
+    <nav id="navbar">
+        <a href="#" class="logo">
+            <div class="logo-mark">P</div>
+            <span class="logo-text">Plumb<span>.</span></span>
+        </a>
+        <div class="nav-links">
+            <a href="#problem">Why Plumb</a>
+            <a href="#process">How It Works</a>
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#contact" class="btn btn-primary">Get Started</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-glow"></div>
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="dot"></span>
+                Now serving DFW subcontractors
+            </div>
+            <h1>
+                Bid with <span class="serif">precision.</span><br>
+                Build with <span class="highlight">confidence.</span>
+            </h1>
+            <p class="hero-description">
+                AI-powered contract analysis for electrical, plumbing, and HVAC subcontractors. 
+                We find the risks buried in the specs—so you don't have to.
+            </p>
+            <div class="hero-cta">
+                <a href="#contact" class="btn btn-primary">
+                    Get a Free Risk Scan
+                    <span>→</span>
+                </a>
+                <a href="#process" class="btn btn-secondary">
+                    See How It Works
+                </a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <div class="stat-value">500<span>+</span></div>
+                    <div class="stat-label">Pages analyzed per bid</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">24<span>hr</span></div>
+                    <div class="stat-label">Turnaround time</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">$0<span>/</span></div>
+                    <div class="stat-label">First scan is free</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="problem" id="problem">
+        <div class="section-header reveal">
+            <div class="section-tag">The Problem</div>
+            <h2 class="section-title">The fine print is where profits go to die.</h2>
+            <p class="section-description">
+                In DFW's booming construction market, general contractors increasingly shift risk 
+                downstream through complex contract language. One missed clause can cost you the entire job.
+            </p>
+        </div>
+        <div class="problem-grid">
+            <div class="problem-card">
+                <div class="problem-icon">⚠</div>
+                <h3>Hidden Liquidated Damages</h3>
+                <p>Punitive delay penalties buried in general conditions that can exceed $2,500/day—with no cap.</p>
+            </div>
+            <div class="problem-card">
+                <div class="problem-icon">◈</div>
+                <h3>Toxic Indemnification</h3>
+                <p>Clauses designed to bypass the Texas Anti-Indemnity Act, exposing you to unlimited liability.</p>
+            </div>
+            <div class="problem-card">
+                <div class="problem-icon">◇</div>
+                <h3>Scope Gaps & Overlaps</h3>
+                <p>HVAC starters in electrical specs, fire stops in mechanical—hidden costs that destroy margins.</p>
+            </div>
+            <div class="problem-card">
+                <div class="problem-icon">⬡</div>
+                <h3>Pay-If-Paid Traps</h3>
+                <p>Cash flow killers that force you to finance projects for months without recourse.</p>
+            </div>
+            <div class="problem-card">
+                <div class="problem-icon">◎</div>
+                <h3>Extended Warranties</h3>
+                <p>Two-year warranty demands when your suppliers only cover one—you're on the hook for the difference.</p>
+            </div>
+            <div class="problem-card">
+                <div class="problem-icon">⬢</div>
+                <h3>Retainage Abuse</h3>
+                <p>10% holdbacks with vague release conditions that turn into permanent deductions.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process Section -->
+    <section class="process" id="process">
+        <div class="section-header reveal">
+            <div class="section-tag">How It Works</div>
+            <h2 class="section-title">From upload to insight in 24 hours.</h2>
+            <p class="section-description">
+                Our AI-augmented analysis combines machine intelligence with construction industry expertise 
+                to deliver actionable risk assessments.
+            </p>
+        </div>
+        <div class="process-timeline">
+            <div class="process-step">
+                <div class="step-number">01</div>
+                <div class="step-content">
+                    <h3>Upload Your Bid Documents</h3>
+                    <p>Submit your specs, general conditions, and addenda through our secure portal. We accept PDF, ZIP, and direct links to plan rooms.</p>
+                </div>
+            </div>
+            <div class="process-step">
+                <div class="step-number">02</div>
+                <div class="step-content">
+                    <h3>AI Semantic Analysis</h3>
+                    <p>Our system scans every page for 20+ risk vectors—liquidated damages, indemnification, scope gaps, warranty terms, and more.</p>
+                </div>
+            </div>
+            <div class="process-step">
+                <div class="step-number">03</div>
+                <div class="step-content">
+                    <h3>Expert Review & Reasoning</h3>
+                    <p>Flagged clauses are analyzed against Texas construction law and our database of GC/Architect patterns in DFW.</p>
+                </div>
+            </div>
+            <div class="process-step">
+                <div class="step-number">04</div>
+                <div class="step-content">
+                    <h3>Red-Line Report Delivery</h3>
+                    <p>Receive a clear, actionable PDF report with risk scores, specific recommendations, and negotiation talking points.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="section-header reveal">
+            <div class="section-tag">The Edge</div>
+            <h2 class="section-title">Intelligence that compounds.</h2>
+            <p class="section-description">
+                Every bid we review makes the system smarter. Our knowledge graph tracks patterns 
+                across DFW's construction ecosystem.
+            </p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-number">01</div>
+                <h3>GC Risk Profiling</h3>
+                <p>Know which general contractors always modify arbitration clauses or bury scope shifts before you sign.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-number">02</div>
+                <h3>Architect Forensics</h3>
+                <p>Track which design firms consistently hide electrical requirements in mechanical specs.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-number">03</div>
+                <h3>Jurisdictional Intel</h3>
+                <p>City-specific insights on inspection requirements, permit timelines, and local code variations.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-number">04</div>
+                <h3>Clause Library</h3>
+                <p>A growing database of toxic clauses we've identified across hundreds of DFW projects.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-number">05</div>
+                <h3>Addendum Watch</h3>
+                <p>Get alerts when new addenda modify previously flagged risks in your active bids.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-number">06</div>
+                <h3>Texas Law Compliance</h3>
+                <p>Every analysis is checked against current Texas construction statutes and anti-indemnity regulations.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing" id="pricing">
+        <div class="section-header reveal">
+            <div class="section-tag">Pricing</div>
+            <h2 class="section-title">Protect your margins.</h2>
+            <p class="section-description">
+                One caught clause pays for a year of service. Choose the plan that fits your bid volume.
+            </p>
+        </div>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <div class="pricing-name">Spot Check</div>
+                <div class="pricing-price">$150 <span>/ bid</span></div>
+                <p class="pricing-description">Quick scan of general conditions for the most critical risks.</p>
+                <ul class="pricing-features">
+                    <li>General Conditions review</li>
+                    <li>Top 10 risk vector scan</li>
+                    <li>48-hour turnaround</li>
+                    <li>PDF summary report</li>
+                </ul>
+                <a href="#contact" class="btn btn-secondary">Get Started</a>
+            </div>
+            <div class="pricing-card featured">
+                <div class="pricing-name">Full Scope</div>
+                <div class="pricing-price">$450 <span>/ bid</span></div>
+                <p class="pricing-description">Complete specification analysis with expert reasoning.</p>
+                <ul class="pricing-features">
+                    <li>Full spec book analysis</li>
+                    <li>All 20+ risk vectors</li>
+                    <li>24-hour turnaround</li>
+                    <li>Detailed red-line report</li>
+                    <li>GC/Architect history check</li>
+                    <li>Negotiation talking points</li>
+                </ul>
+                <a href="#contact" class="btn btn-primary">Get Started</a>
+            </div>
+            <div class="pricing-card">
+                <div class="pricing-name">Retainer</div>
+                <div class="pricing-price">$2,000 <span>/ month</span></div>
+                <p class="pricing-description">Unlimited coverage for high-volume bidders.</p>
+                <ul class="pricing-features">
+                    <li>Up to 10 full reviews/month</li>
+                    <li>Priority 12-hour turnaround</li>
+                    <li>Addendum monitoring</li>
+                    <li>Dedicated analyst</li>
+                    <li>Quarterly risk briefings</li>
+                </ul>
+                <a href="#contact" class="btn btn-secondary">Contact Us</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta" id="contact">
+        <div class="cta-content reveal">
+            <h2>Ready to bid with clarity?</h2>
+            <p>Get a free risk scan on your current bid. No commitment, no credit card—just insights.</p>
+            <a href="mailto:risk@plumb-bids.com" class="btn btn-primary">
+                Get Your Free Scan
+                <span>→</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-brand">
+                <a href="#" class="logo">
+                    <div class="logo-mark">P</div>
+                    <span class="logo-text">Plumb<span>.</span></span>
+                </a>
+                <p>AI-powered contract intelligence for DFW subcontractors. True alignment. Zero risk.</p>
+            </div>
+            <div class="footer-links">
+                <div class="footer-column">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="#process">How It Works</a></li>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#pricing">Pricing</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="#">About</a></li>
+                        <li><a href="#">Contact</a></li>
+                        <li><a href="#">Privacy</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><a href="mailto:risk@plumb-bids.com">risk@plumb-bids.com</a></li>
+                        <li><a href="#">Dallas-Fort Worth, TX</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2025 Plumb. All rights reserved.</span>
+            <span>Built for DFW subcontractors.</span>
+        </div>
+    </footer>
+
+    <script>
+        // Navbar scroll effect
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Intersection Observer for scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        // Observe all reveal elements
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // Observe problem cards with stagger
+        document.querySelectorAll('.problem-card').forEach((card, index) => {
+            card.style.transitionDelay = `${index * 0.1}s`;
+            observer.observe(card);
+        });
+
+        // Observe process steps with stagger
+        document.querySelectorAll('.process-step').forEach((step, index) => {
+            step.style.transitionDelay = `${index * 0.15}s`;
+            observer.observe(step);
+        });
+
+        // Observe feature cards with stagger
+        document.querySelectorAll('.feature-card').forEach((card, index) => {
+            card.style.transitionDelay = `${index * 0.08}s`;
+            observer.observe(card);
+        });
+
+        // Observe pricing cards with stagger
+        document.querySelectorAll('.pricing-card').forEach((card, index) => {
+            card.style.transitionDelay = `${index * 0.15}s`;
+            observer.observe(card);
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Parallax effect for hero glow
+        document.addEventListener('mousemove', (e) => {
+            const glow = document.querySelector('.hero-glow');
+            const x = (e.clientX / window.innerWidth - 0.5) * 30;
+            const y = (e.clientY / window.innerHeight - 0.5) * 30;
+            glow.style.transform = `translate(${x}px, ${y}px)`;
+        });
+    </script>
+</body>
+</html>
