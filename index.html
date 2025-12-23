@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+    <link rel="apple-touch-icon" href="images/favicon.svg">
     <style>
         :root {
             --black: #08080a;
@@ -111,33 +113,17 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
             text-decoration: none;
         }
 
-        .logo-mark {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--amber) 0%, var(--amber-dim) 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            color: var(--black);
-            font-size: 1.1rem;
-            box-shadow: 0 0 30px var(--amber-glow);
+        .logo-img {
+            height: 36px;
+            width: auto;
+            transition: opacity 0.3s ease;
         }
 
-        .logo-text {
-            font-size: 1.4rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            letter-spacing: -0.02em;
-        }
-
-        .logo-text span {
-            color: var(--amber);
+        .logo:hover .logo-img {
+            opacity: 0.9;
         }
 
         .nav-links {
@@ -1697,8 +1683,7 @@
     <!-- Navigation -->
     <nav id="navbar">
         <a href="#" class="logo">
-            <div class="logo-mark">P</div>
-            <span class="logo-text">Plumb<span>.</span></span>
+            <img src="images/logo.svg" alt="Plumb" class="logo-img">
         </a>
         <div class="nav-links">
             <a href="#problem">Why Plumb</a>
@@ -2311,8 +2296,7 @@
         <div class="footer-content">
             <div class="footer-brand">
                 <a href="#" class="logo">
-                    <div class="logo-mark">P</div>
-                    <span class="logo-text">Plumb<span>.</span></span>
+                    <img src="images/logo.svg" alt="Plumb" class="logo-img">
                 </a>
                 <p>AI-powered contract intelligence for DFW subcontractors. True alignment. Zero risk.</p>
                 <div class="footer-badge">
