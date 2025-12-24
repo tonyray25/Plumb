@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 40">
   <!-- String -->
-  <rect x="14.5" y="0" width="3" height="12" fill="#f0a500"/>
-  <!-- Bob top (cap) -->
-  <rect x="11" y="11" width="10" height="4" fill="#f0a500"/>
-  <!-- Bob body (pentagon pointing down) -->
-  <polygon points="16,15 23,19 23,24 16,32 9,24 9,19" fill="#f0a500"/>
+  <rect x="13.5" y="0" width="5" height="14" fill="#f0a500"/>
+  <!-- Bob cap -->
+  <rect x="9" y="13" width="14" height="6" fill="#f0a500"/>
+  <!-- Bob body (pentagon) -->
+  <polygon points="16,19 26,25 26,32 16,40 6,32 6,25" fill="#f0a500"/>
 </svg>
