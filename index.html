@@ -10,6 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="images/favicon.png">
     <link rel="apple-touch-icon" href="images/favicon.png">
+    <!-- Three.js and GSAP for 3D graphics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
         :root {
             --black: #08080a;
@@ -433,6 +436,39 @@
             font-size: 1.05rem;
             color: var(--text-secondary);
             line-height: 1.7;
+        }
+
+        /* Three.js Canvas Containers */
+        .section-with-3d {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-3d-content {
+            max-width: 600px;
+        }
+
+        .section-3d-content .section-header {
+            margin-bottom: 2rem;
+        }
+
+        .section-canvas {
+            height: 450px;
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(20, 20, 24, 0.5);
+            border: 1px solid var(--border);
+        }
+
+        .section-canvas canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
         }
 
         /* Problem Section */
@@ -1554,6 +1590,20 @@
         }
 
         @media (max-width: 768px) {
+            .section-with-3d {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .section-canvas {
+                height: 300px;
+                order: -1;
+            }
+
+            .section-3d-content {
+                max-width: 100%;
+            }
+
             nav {
                 padding: 1rem 1.5rem;
                 flex-wrap: wrap;
@@ -1824,12 +1874,17 @@
 
     <!-- Problem Section -->
     <section class="problem" id="problem">
-        <div class="section-header reveal">
-            <div class="section-tag">The Problem</div>
-            <h2 class="section-title">The fine print is where profits go to die.</h2>
-            <p class="section-description">
-                In DFW's booming construction market, GCs increasingly shift risk downstream through complex contract language. Without in-house counsel, one missed clause can cost you the entire job.
-            </p>
+        <div class="section-with-3d">
+            <div class="section-3d-content">
+                <div class="section-header reveal">
+                    <div class="section-tag">The Problem</div>
+                    <h2 class="section-title">The fine print is where profits go to die.</h2>
+                    <p class="section-description">
+                        In DFW's booming construction market, GCs increasingly shift risk downstream through complex contract language. Without in-house counsel, one missed clause can cost you the entire job.
+                    </p>
+                </div>
+            </div>
+            <div class="section-canvas" id="problem-canvas"></div>
         </div>
         <div class="problem-grid">
             <div class="problem-card">
@@ -1921,15 +1976,7 @@
                     <h4>Live Knowledge Graph</h4>
                     <div class="knowledge-graph-badge">● Updating</div>
                 </div>
-                <div class="graph-visual" id="graphVisual">
-                    <div class="graph-node central">PLUMB<br>INTEL</div>
-                    <div class="graph-node" style="top: 15%; left: 20%;">GC<br>Patterns</div>
-                    <div class="graph-node" style="top: 10%; right: 25%;">Architect<br>Forensics</div>
-                    <div class="graph-node" style="bottom: 25%; left: 10%;">Texas<br>Statutes</div>
-                    <div class="graph-node" style="bottom: 15%; right: 20%;">ISD<br>Contracts</div>
-                    <div class="graph-node" style="top: 45%; left: 5%;">Municipal<br>Codes</div>
-                    <div class="graph-node" style="top: 40%; right: 8%;">Clause<br>Library</div>
-                </div>
+                <div class="section-canvas" id="moat-canvas" style="height: 280px; border: none; background: transparent;"></div>
                 <div class="graph-stats">
                     <div class="graph-stat">
                         <div class="graph-stat-value">847</div>
@@ -1993,39 +2040,7 @@
                     <h4>Under the Hood</h4>
                     <div class="tech-stack-badge">Local Processing</div>
                 </div>
-                <div class="tech-flow">
-                    <div class="tech-item">
-                        <div class="tech-icon">📄</div>
-                        <div class="tech-info">
-                            <h5>Document Ingestion</h5>
-                            <p>Secure upload, OCR processing, structure parsing</p>
-                        </div>
-                    </div>
-                    <div class="tech-arrow">↓</div>
-                    <div class="tech-item">
-                        <div class="tech-icon">🔍</div>
-                        <div class="tech-info">
-                            <h5>mgrep Pattern Engine</h5>
-                            <p>20+ risk vector identification across all divisions</p>
-                        </div>
-                    </div>
-                    <div class="tech-arrow">↓</div>
-                    <div class="tech-item">
-                        <div class="tech-icon">🧠</div>
-                        <div class="tech-info">
-                            <h5>DeepSeek R1 Reasoning</h5>
-                            <p>Contextual analysis, implication assessment</p>
-                        </div>
-                    </div>
-                    <div class="tech-arrow">↓</div>
-                    <div class="tech-item">
-                        <div class="tech-icon">📚</div>
-                        <div class="tech-info">
-                            <h5>Obsidian Knowledge Graph</h5>
-                            <p>Pattern matching against DFW precedent library</p>
-                        </div>
-                    </div>
-                </div>
+                <div class="section-canvas" id="process-canvas" style="height: 320px; border: none; background: transparent;"></div>
                 <div class="tech-security">
                     <div class="security-badge">
                         <span class="icon">✓</span> APFS Encrypted
@@ -2200,7 +2215,7 @@
             </div>
             <div class="legislative-sidebar reveal">
                 <h4><span class="icon">⚖️</span> Continuous Monitoring</h4>
-                <p>Every analysis is checked against current Texas construction statutes. As laws change, our system updates&mdash;ensuring your risk assessment reflects today's legal landscape, not last year's.</p>
+                <div class="section-canvas" id="legislative-canvas" style="height: 280px; border: none; background: transparent; margin: 1rem 0;"></div>
                 <div class="monitored-list">
                     <span class="monitored-item">Tex. Prop. Code Ch. 162</span>
                     <span class="monitored-item">Tex. Bus. & Com. Code Ch. 28</span>
@@ -2556,6 +2571,559 @@
             }
         `;
         document.head.appendChild(style);
+
+        // ============================================
+        // THREE.JS 3D SCENES
+        // ============================================
+
+        // Utility: Check if element is in viewport
+        function isInViewport(element) {
+            const rect = element.getBoundingClientRect();
+            return rect.top < window.innerHeight && rect.bottom > 0;
+        }
+
+        // Scene 1: Problem Section - Dissolving Document
+        function initProblemScene() {
+            const container = document.getElementById('problem-canvas');
+            if (!container || typeof THREE === 'undefined') return;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Create document pages
+            const pages = [];
+            const pageGeometry = new THREE.PlaneGeometry(2, 2.8, 20, 28);
+
+            for (let i = 0; i < 5; i++) {
+                const pageMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xf5f5f7,
+                    transparent: true,
+                    opacity: 0.9 - i * 0.15,
+                    side: THREE.DoubleSide,
+                    wireframe: false
+                });
+                const page = new THREE.Mesh(pageGeometry, pageMaterial);
+                page.position.set(i * 0.08, i * 0.05, -i * 0.15);
+                page.rotation.y = i * 0.02;
+                pages.push(page);
+                scene.add(page);
+
+                // Add text lines to pages
+                const lineGeometry = new THREE.PlaneGeometry(1.6, 0.05);
+                const lineMaterial = new THREE.MeshBasicMaterial({ color: 0x5c5c6d, transparent: true, opacity: 0.4 });
+                for (let j = 0; j < 12; j++) {
+                    const line = new THREE.Mesh(lineGeometry, lineMaterial.clone());
+                    line.position.set(0, 1.1 - j * 0.2, 0.01);
+                    page.add(line);
+                }
+            }
+
+            // Red highlight on risky clause
+            const highlightGeometry = new THREE.PlaneGeometry(1.4, 0.15);
+            const highlightMaterial = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.6 });
+            const highlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
+            highlight.position.set(0, 0.3, 0.02);
+            pages[0].add(highlight);
+
+            // Particles for dissolution effect
+            const particleCount = 500;
+            const particleGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = [];
+
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 4;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 4;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 2;
+                velocities.push({
+                    x: (Math.random() - 0.5) * 0.02,
+                    y: (Math.random() - 0.5) * 0.02 - 0.01,
+                    z: (Math.random() - 0.5) * 0.02
+                });
+            }
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const particleMaterial = new THREE.PointsMaterial({
+                color: 0xef4444,
+                size: 0.03,
+                transparent: true,
+                opacity: 0.6
+            });
+            const particles = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particles);
+
+            camera.position.z = 5;
+
+            let animationId;
+            function animate() {
+                animationId = requestAnimationFrame(animate);
+
+                if (!isInViewport(container)) return;
+
+                // Rotate pages slightly
+                pages.forEach((page, i) => {
+                    page.rotation.y = Math.sin(Date.now() * 0.0005 + i) * 0.1;
+                    page.rotation.x = Math.sin(Date.now() * 0.0003 + i) * 0.02;
+                });
+
+                // Animate particles
+                const pos = particleGeometry.attributes.position.array;
+                for (let i = 0; i < particleCount; i++) {
+                    pos[i * 3] += velocities[i].x;
+                    pos[i * 3 + 1] += velocities[i].y;
+                    pos[i * 3 + 2] += velocities[i].z;
+
+                    // Reset particles that go too far
+                    if (Math.abs(pos[i * 3]) > 3 || Math.abs(pos[i * 3 + 1]) > 3) {
+                        pos[i * 3] = (Math.random() - 0.5) * 2;
+                        pos[i * 3 + 1] = (Math.random() - 0.5) * 2;
+                        pos[i * 3 + 2] = (Math.random() - 0.5);
+                    }
+                }
+                particleGeometry.attributes.position.needsUpdate = true;
+
+                // Pulse highlight
+                highlight.material.opacity = 0.4 + Math.sin(Date.now() * 0.003) * 0.3;
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        // Scene 2: Moat Section - Knowledge Graph / Neural Network
+        function initMoatScene() {
+            const container = document.getElementById('moat-canvas');
+            if (!container || typeof THREE === 'undefined') return;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Create nodes
+            const nodes = [];
+            const nodePositions = [
+                { x: 0, y: 0, z: 0, size: 0.35, color: 0xf0a500 }, // Central node
+                { x: -1.5, y: 1, z: 0.5, size: 0.2, color: 0x3b82f6 },
+                { x: 1.5, y: 1, z: -0.3, size: 0.2, color: 0x3b82f6 },
+                { x: -1.2, y: -1, z: 0.2, size: 0.2, color: 0x06b6d4 },
+                { x: 1.3, y: -0.8, z: 0.4, size: 0.2, color: 0x06b6d4 },
+                { x: 0, y: 1.5, z: -0.5, size: 0.18, color: 0x3b82f6 },
+                { x: -0.8, y: 0.5, z: 1, size: 0.15, color: 0x06b6d4 },
+                { x: 0.9, y: -0.3, z: 0.8, size: 0.15, color: 0x06b6d4 }
+            ];
+
+            nodePositions.forEach((pos, i) => {
+                const geometry = new THREE.SphereGeometry(pos.size, 32, 32);
+                const material = new THREE.MeshBasicMaterial({
+                    color: pos.color,
+                    transparent: true,
+                    opacity: i === 0 ? 1 : 0.8
+                });
+                const node = new THREE.Mesh(geometry, material);
+                node.position.set(pos.x, pos.y, pos.z);
+                node.userData = { originalPos: { ...pos }, pulseOffset: Math.random() * Math.PI * 2 };
+                nodes.push(node);
+                scene.add(node);
+
+                // Add glow effect for central node
+                if (i === 0) {
+                    const glowGeometry = new THREE.SphereGeometry(pos.size * 1.5, 32, 32);
+                    const glowMaterial = new THREE.MeshBasicMaterial({
+                        color: 0xf0a500,
+                        transparent: true,
+                        opacity: 0.2
+                    });
+                    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+                    node.add(glow);
+                }
+            });
+
+            // Create connections
+            const connections = [];
+            const connectionPairs = [[0,1], [0,2], [0,3], [0,4], [0,5], [1,5], [2,4], [3,6], [4,7], [1,6], [2,7]];
+
+            connectionPairs.forEach(pair => {
+                const material = new THREE.LineBasicMaterial({
+                    color: 0x3b82f6,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(6);
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                const line = new THREE.Line(geometry, material);
+                line.userData = { start: pair[0], end: pair[1] };
+                connections.push(line);
+                scene.add(line);
+            });
+
+            camera.position.z = 4;
+
+            let animationId;
+            function animate() {
+                animationId = requestAnimationFrame(animate);
+
+                if (!isInViewport(container)) return;
+
+                const time = Date.now() * 0.001;
+
+                // Animate nodes
+                nodes.forEach((node, i) => {
+                    const orig = node.userData.originalPos;
+                    const offset = node.userData.pulseOffset;
+                    node.position.x = orig.x + Math.sin(time + offset) * 0.1;
+                    node.position.y = orig.y + Math.cos(time * 0.8 + offset) * 0.1;
+
+                    // Pulse effect
+                    if (i === 0) {
+                        node.scale.setScalar(1 + Math.sin(time * 2) * 0.05);
+                    }
+                });
+
+                // Update connections
+                connections.forEach(line => {
+                    const startNode = nodes[line.userData.start];
+                    const endNode = nodes[line.userData.end];
+                    const positions = line.geometry.attributes.position.array;
+                    positions[0] = startNode.position.x;
+                    positions[1] = startNode.position.y;
+                    positions[2] = startNode.position.z;
+                    positions[3] = endNode.position.x;
+                    positions[4] = endNode.position.y;
+                    positions[5] = endNode.position.z;
+                    line.geometry.attributes.position.needsUpdate = true;
+
+                    // Pulse connection opacity
+                    line.material.opacity = 0.2 + Math.sin(time * 2 + line.userData.start) * 0.15;
+                });
+
+                // Slow rotation
+                scene.rotation.y = time * 0.1;
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        // Scene 3: Process Section - Data Pipeline
+        function initProcessScene() {
+            const container = document.getElementById('process-canvas');
+            if (!container || typeof THREE === 'undefined') return;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Input document (left)
+            const docGeometry = new THREE.BoxGeometry(0.8, 1.1, 0.05);
+            const docMaterial = new THREE.MeshBasicMaterial({ color: 0xf5f5f7, transparent: true, opacity: 0.9 });
+            const inputDoc = new THREE.Mesh(docGeometry, docMaterial);
+            inputDoc.position.set(-2.5, 0, 0);
+            scene.add(inputDoc);
+
+            // Processing core (center) - Icosahedron
+            const coreGeometry = new THREE.IcosahedronGeometry(0.7, 1);
+            const coreMaterial = new THREE.MeshBasicMaterial({
+                color: 0x3b82f6,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.8
+            });
+            const core = new THREE.Mesh(coreGeometry, coreMaterial);
+            core.position.set(0, 0, 0);
+            scene.add(core);
+
+            // Inner core glow
+            const innerCoreGeometry = new THREE.IcosahedronGeometry(0.4, 1);
+            const innerCoreMaterial = new THREE.MeshBasicMaterial({
+                color: 0xf0a500,
+                transparent: true,
+                opacity: 0.6
+            });
+            const innerCore = new THREE.Mesh(innerCoreGeometry, innerCoreMaterial);
+            core.add(innerCore);
+
+            // Output report (right) - Shield shape
+            const shieldShape = new THREE.Shape();
+            shieldShape.moveTo(0, 0.6);
+            shieldShape.lineTo(0.5, 0.4);
+            shieldShape.lineTo(0.5, -0.2);
+            shieldShape.lineTo(0, -0.5);
+            shieldShape.lineTo(-0.5, -0.2);
+            shieldShape.lineTo(-0.5, 0.4);
+            shieldShape.lineTo(0, 0.6);
+
+            const shieldGeometry = new THREE.ExtrudeGeometry(shieldShape, { depth: 0.1, bevelEnabled: false });
+            const shieldMaterial = new THREE.MeshBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.8 });
+            const outputShield = new THREE.Mesh(shieldGeometry, shieldMaterial);
+            outputShield.position.set(2.5, 0, 0);
+            outputShield.rotation.y = Math.PI;
+            scene.add(outputShield);
+
+            // Check mark on shield
+            const checkGeometry = new THREE.BufferGeometry();
+            const checkPoints = new Float32Array([
+                -0.15, 0, 0.1,
+                -0.05, -0.15, 0.1,
+                0.2, 0.2, 0.1
+            ]);
+            checkGeometry.setAttribute('position', new THREE.BufferAttribute(checkPoints, 3));
+            const checkMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
+            const checkMark = new THREE.Line(checkGeometry, checkMaterial);
+            outputShield.add(checkMark);
+
+            // Data particles flowing through
+            const particleCount = 100;
+            const flowParticles = [];
+
+            for (let i = 0; i < particleCount; i++) {
+                const geometry = new THREE.SphereGeometry(0.03, 8, 8);
+                const material = new THREE.MeshBasicMaterial({
+                    color: i % 3 === 0 ? 0xf0a500 : 0x3b82f6,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const particle = new THREE.Mesh(geometry, material);
+                particle.userData = {
+                    progress: Math.random(),
+                    speed: 0.002 + Math.random() * 0.003,
+                    yOffset: (Math.random() - 0.5) * 0.8,
+                    zOffset: (Math.random() - 0.5) * 0.5
+                };
+                flowParticles.push(particle);
+                scene.add(particle);
+            }
+
+            camera.position.z = 5;
+
+            let animationId;
+            function animate() {
+                animationId = requestAnimationFrame(animate);
+
+                if (!isInViewport(container)) return;
+
+                const time = Date.now() * 0.001;
+
+                // Rotate processing core
+                core.rotation.x = time * 0.5;
+                core.rotation.y = time * 0.3;
+                innerCore.rotation.x = -time * 0.8;
+                innerCore.rotation.y = -time * 0.5;
+
+                // Pulse core
+                const scale = 1 + Math.sin(time * 3) * 0.1;
+                core.scale.setScalar(scale);
+
+                // Animate flow particles
+                flowParticles.forEach(particle => {
+                    particle.userData.progress += particle.userData.speed;
+                    if (particle.userData.progress > 1) {
+                        particle.userData.progress = 0;
+                    }
+
+                    const p = particle.userData.progress;
+                    // Path from left to right through center
+                    particle.position.x = -3 + p * 6;
+                    particle.position.y = particle.userData.yOffset + Math.sin(p * Math.PI * 4) * 0.2;
+                    particle.position.z = particle.userData.zOffset + Math.sin(p * Math.PI * 2) * 0.3;
+
+                    // Fade in/out at edges
+                    particle.material.opacity = Math.sin(p * Math.PI) * 0.8;
+                });
+
+                // Gentle bob for input/output
+                inputDoc.position.y = Math.sin(time) * 0.1;
+                inputDoc.rotation.z = Math.sin(time * 0.5) * 0.05;
+                outputShield.position.y = Math.sin(time + 1) * 0.1;
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        // Scene 4: Legislative Section - Texas Monitoring
+        function initLegislativeScene() {
+            const container = document.getElementById('legislative-canvas');
+            if (!container || typeof THREE === 'undefined') return;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Texas star shape
+            const starShape = new THREE.Shape();
+            const outerRadius = 1;
+            const innerRadius = 0.4;
+            const spikes = 5;
+
+            for (let i = 0; i < spikes * 2; i++) {
+                const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                if (i === 0) {
+                    starShape.moveTo(x, y);
+                } else {
+                    starShape.lineTo(x, y);
+                }
+            }
+            starShape.closePath();
+
+            const starGeometry = new THREE.ExtrudeGeometry(starShape, { depth: 0.15, bevelEnabled: false });
+            const starMaterial = new THREE.MeshBasicMaterial({
+                color: 0xf0a500,
+                transparent: true,
+                opacity: 0.9
+            });
+            const star = new THREE.Mesh(starGeometry, starMaterial);
+            star.position.set(0, 0, 0);
+            scene.add(star);
+
+            // Radar rings
+            const rings = [];
+            for (let i = 0; i < 4; i++) {
+                const ringGeometry = new THREE.RingGeometry(0.5 + i * 0.6, 0.52 + i * 0.6, 64);
+                const ringMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x3b82f6,
+                    transparent: true,
+                    opacity: 0,
+                    side: THREE.DoubleSide
+                });
+                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                ring.userData = { baseRadius: 0.5 + i * 0.6, delay: i * 0.5 };
+                rings.push(ring);
+                scene.add(ring);
+            }
+
+            // Law marker points
+            const markers = [];
+            const markerPositions = [
+                { angle: 0.3, dist: 1.5 },
+                { angle: 1.2, dist: 1.8 },
+                { angle: 2.5, dist: 1.3 },
+                { angle: 4.0, dist: 2.0 },
+                { angle: 5.2, dist: 1.6 }
+            ];
+
+            markerPositions.forEach(pos => {
+                const markerGeometry = new THREE.CircleGeometry(0.08, 16);
+                const markerMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x22c55e,
+                    transparent: true,
+                    opacity: 0
+                });
+                const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+                marker.position.x = Math.cos(pos.angle) * pos.dist;
+                marker.position.y = Math.sin(pos.angle) * pos.dist;
+                marker.position.z = 0.1;
+                marker.userData = { angle: pos.angle, dist: pos.dist, visible: false };
+                markers.push(marker);
+                scene.add(marker);
+            });
+
+            camera.position.z = 4;
+
+            let radarAngle = 0;
+            let animationId;
+
+            function animate() {
+                animationId = requestAnimationFrame(animate);
+
+                if (!isInViewport(container)) return;
+
+                const time = Date.now() * 0.001;
+
+                // Rotate star slowly
+                star.rotation.z = Math.sin(time * 0.2) * 0.1;
+
+                // Radar sweep
+                radarAngle += 0.02;
+                if (radarAngle > Math.PI * 2) radarAngle = 0;
+
+                // Animate rings - expanding pulse effect
+                rings.forEach((ring, i) => {
+                    const cycleTime = (time + ring.userData.delay) % 3;
+                    if (cycleTime < 2) {
+                        const scale = 1 + cycleTime * 0.5;
+                        ring.scale.setScalar(scale);
+                        ring.material.opacity = Math.max(0, 0.4 - cycleTime * 0.2);
+                    } else {
+                        ring.material.opacity = 0;
+                        ring.scale.setScalar(1);
+                    }
+                });
+
+                // Show markers when radar passes
+                markers.forEach(marker => {
+                    const angleDiff = Math.abs(radarAngle - marker.userData.angle);
+                    if (angleDiff < 0.3 || angleDiff > Math.PI * 2 - 0.3) {
+                        marker.material.opacity = Math.min(1, marker.material.opacity + 0.1);
+                    } else {
+                        marker.material.opacity = Math.max(0, marker.material.opacity - 0.02);
+                    }
+                    // Pulse visible markers
+                    if (marker.material.opacity > 0.5) {
+                        marker.scale.setScalar(1 + Math.sin(time * 5) * 0.2);
+                    }
+                });
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        // Initialize all scenes when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                initProblemScene();
+                initMoatScene();
+                initProcessScene();
+                initLegislativeScene();
+            });
+        } else {
+            initProblemScene();
+            initMoatScene();
+            initProcessScene();
+            initLegislativeScene();
+        }
 
         // Mobile menu toggle
         const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
