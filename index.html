@@ -224,6 +224,22 @@
             overflow: hidden;
         }
 
+        .hero-canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.4;
+        }
+
+        .hero-canvas-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
         .hero-glow {
             position: absolute;
             top: 15%;
@@ -1828,6 +1844,7 @@
 
     <!-- Hero Section -->
     <section class="hero">
+        <div class="hero-canvas-container" id="hero-canvas"></div>
         <div class="hero-glow"></div>
         <div class="hero-glow-secondary"></div>
         <div class="hero-content">
@@ -2573,556 +2590,590 @@
         document.head.appendChild(style);
 
         // ============================================
-        // THREE.JS 3D SCENES
+        // THREE.JS GLB SCENE MANAGER
         // ============================================
 
-        // Utility: Check if element is in viewport
-        function isInViewport(element) {
-            const rect = element.getBoundingClientRect();
-            return rect.top < window.innerHeight && rect.bottom > 0;
-        }
+        // Configuration for each scene
+        const sceneConfigs = {
+            hero: {
+                containerId: 'hero-canvas',
+                modelPath: 'public/3d/hero-scene.glb',
+                cameraDistance: 5,
+                cameraSpeed: 0.0003,
+                modelRotation: 0.0008,
+                modelScale: 1.0,
+                modelPosition: [0, 0, 0],
+                animationSpeed: 1.0,
+                ambientIntensity: 0.8,
+                directionalIntensity: 1.0,
+                floatAmplitude: 0.1,
+                floatSpeed: 0.5
+            },
+            problem: {
+                containerId: 'problem-canvas',
+                modelPath: 'public/3d/problem-scene.glb',
+                cameraDistance: 6,
+                cameraSpeed: 0.0002,
+                modelRotation: 0.0005,
+                modelScale: 1.0,
+                modelPosition: [0, 0, 0],
+                animationSpeed: 0.8,
+                ambientIntensity: 0.6,
+                directionalIntensity: 0.8,
+                floatAmplitude: 0.05,
+                floatSpeed: 0.3
+            },
+            edge: {
+                containerId: 'moat-canvas',
+                modelPath: 'public/3d/edge-scene.glb',
+                cameraDistance: 5,
+                cameraSpeed: 0.0004,
+                modelRotation: 0.001,
+                modelScale: 1.0,
+                modelPosition: [0, 0, 0],
+                animationSpeed: 1.0,
+                ambientIntensity: 0.7,
+                directionalIntensity: 0.9,
+                floatAmplitude: 0.08,
+                floatSpeed: 0.4
+            },
+            process: {
+                containerId: 'process-canvas',
+                modelPath: 'public/3d/process-scene.glb',
+                cameraDistance: 5.5,
+                cameraSpeed: 0.0003,
+                modelRotation: 0.0006,
+                modelScale: 1.0,
+                modelPosition: [0, 0, 0],
+                animationSpeed: 1.2,
+                ambientIntensity: 0.7,
+                directionalIntensity: 0.85,
+                floatAmplitude: 0.06,
+                floatSpeed: 0.35
+            }
+        };
 
-        // Scene 1: Problem Section - Dissolving Document
-        function initProblemScene() {
-            const container = document.getElementById('problem-canvas');
-            if (!container || typeof THREE === 'undefined') return;
+        // Scene Manager Class
+        class SceneManager {
+            constructor(config) {
+                this.config = config;
+                this.container = document.getElementById(config.containerId);
+                if (!this.container || typeof THREE === 'undefined') return;
 
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            container.appendChild(renderer.domElement);
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.model = null;
+                this.mixer = null;
+                this.clock = new THREE.Clock();
+                this.isVisible = true;
+                this.isTabVisible = true;
+                this.animationId = null;
+                this.cameraAngle = 0;
+                this.floatOffset = Math.random() * Math.PI * 2;
 
-            // Create document pages
-            const pages = [];
-            const pageGeometry = new THREE.PlaneGeometry(2, 2.8, 20, 28);
-
-            for (let i = 0; i < 5; i++) {
-                const pageMaterial = new THREE.MeshBasicMaterial({
-                    color: 0xf5f5f7,
-                    transparent: true,
-                    opacity: 0.9 - i * 0.15,
-                    side: THREE.DoubleSide,
-                    wireframe: false
-                });
-                const page = new THREE.Mesh(pageGeometry, pageMaterial);
-                page.position.set(i * 0.08, i * 0.05, -i * 0.15);
-                page.rotation.y = i * 0.02;
-                pages.push(page);
-                scene.add(page);
-
-                // Add text lines to pages
-                const lineGeometry = new THREE.PlaneGeometry(1.6, 0.05);
-                const lineMaterial = new THREE.MeshBasicMaterial({ color: 0x5c5c6d, transparent: true, opacity: 0.4 });
-                for (let j = 0; j < 12; j++) {
-                    const line = new THREE.Mesh(lineGeometry, lineMaterial.clone());
-                    line.position.set(0, 1.1 - j * 0.2, 0.01);
-                    page.add(line);
-                }
+                this.init();
             }
 
-            // Red highlight on risky clause
-            const highlightGeometry = new THREE.PlaneGeometry(1.4, 0.15);
-            const highlightMaterial = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.6 });
-            const highlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
-            highlight.position.set(0, 0.3, 0.02);
-            pages[0].add(highlight);
+            init() {
+                // Create scene
+                this.scene = new THREE.Scene();
 
-            // Particles for dissolution effect
-            const particleCount = 500;
-            const particleGeometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(particleCount * 3);
-            const velocities = [];
+                // Create camera
+                const aspect = this.container.clientWidth / this.container.clientHeight;
+                this.camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 1000);
+                this.camera.position.z = this.config.cameraDistance;
 
-            for (let i = 0; i < particleCount; i++) {
-                positions[i * 3] = (Math.random() - 0.5) * 4;
-                positions[i * 3 + 1] = (Math.random() - 0.5) * 4;
-                positions[i * 3 + 2] = (Math.random() - 0.5) * 2;
-                velocities.push({
-                    x: (Math.random() - 0.5) * 0.02,
-                    y: (Math.random() - 0.5) * 0.02 - 0.01,
-                    z: (Math.random() - 0.5) * 0.02
+                // Create renderer
+                this.renderer = new THREE.WebGLRenderer({
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: 'high-performance'
                 });
+                this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.outputEncoding = THREE.sRGBEncoding;
+                this.container.appendChild(this.renderer.domElement);
+
+                // Add lighting
+                this.addLighting();
+
+                // Load model
+                this.loadModel();
+
+                // Setup observers
+                this.setupIntersectionObserver();
+                this.setupVisibilityHandler();
+                this.setupResizeHandler();
+
+                // Start animation
+                this.animate();
             }
-            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-            const particleMaterial = new THREE.PointsMaterial({
-                color: 0xef4444,
-                size: 0.03,
-                transparent: true,
-                opacity: 0.6
-            });
-            const particles = new THREE.Points(particleGeometry, particleMaterial);
-            scene.add(particles);
+            addLighting() {
+                // Hemisphere light
+                const hemiLight = new THREE.HemisphereLight(
+                    0xffffff,
+                    0x444444,
+                    this.config.ambientIntensity
+                );
+                hemiLight.position.set(0, 20, 0);
+                this.scene.add(hemiLight);
 
-            camera.position.z = 5;
+                // Directional light
+                const dirLight = new THREE.DirectionalLight(
+                    0xffffff,
+                    this.config.directionalIntensity
+                );
+                dirLight.position.set(5, 5, 5);
+                dirLight.castShadow = false;
+                this.scene.add(dirLight);
 
-            let animationId;
-            function animate() {
-                animationId = requestAnimationFrame(animate);
+                // Additional fill light
+                const fillLight = new THREE.DirectionalLight(0xf0a500, 0.3);
+                fillLight.position.set(-5, 0, -5);
+                this.scene.add(fillLight);
+            }
 
-                if (!isInViewport(container)) return;
+            loadModel() {
+                // Try to load GLB model
+                const loader = new THREE.GLTFLoader();
 
-                // Rotate pages slightly
-                pages.forEach((page, i) => {
-                    page.rotation.y = Math.sin(Date.now() * 0.0005 + i) * 0.1;
-                    page.rotation.x = Math.sin(Date.now() * 0.0003 + i) * 0.02;
-                });
+                loader.load(
+                    this.config.modelPath,
+                    (gltf) => {
+                        this.model = gltf.scene;
+                        this.model.scale.setScalar(this.config.modelScale);
+                        this.model.position.set(...this.config.modelPosition);
+                        this.scene.add(this.model);
 
-                // Animate particles
-                const pos = particleGeometry.attributes.position.array;
-                for (let i = 0; i < particleCount; i++) {
-                    pos[i * 3] += velocities[i].x;
-                    pos[i * 3 + 1] += velocities[i].y;
-                    pos[i * 3 + 2] += velocities[i].z;
+                        // Setup animations if present
+                        if (gltf.animations && gltf.animations.length > 0) {
+                            this.mixer = new THREE.AnimationMixer(this.model);
+                            gltf.animations.forEach(clip => {
+                                const action = this.mixer.clipAction(clip);
+                                action.setEffectiveTimeScale(this.config.animationSpeed);
+                                action.play();
+                            });
+                        }
 
-                    // Reset particles that go too far
-                    if (Math.abs(pos[i * 3]) > 3 || Math.abs(pos[i * 3 + 1]) > 3) {
-                        pos[i * 3] = (Math.random() - 0.5) * 2;
-                        pos[i * 3 + 1] = (Math.random() - 0.5) * 2;
-                        pos[i * 3 + 2] = (Math.random() - 0.5);
+                        // Center model
+                        const box = new THREE.Box3().setFromObject(this.model);
+                        const center = box.getCenter(new THREE.Vector3());
+                        this.model.position.sub(center);
+                    },
+                    (progress) => {
+                        // Loading progress
+                    },
+                    (error) => {
+                        // GLB not found - create fallback procedural scene
+                        console.log(`GLB not found for ${this.config.containerId}, using fallback`);
+                        this.createFallbackScene();
                     }
-                }
-                particleGeometry.attributes.position.needsUpdate = true;
-
-                // Pulse highlight
-                highlight.material.opacity = 0.4 + Math.sin(Date.now() * 0.003) * 0.3;
-
-                renderer.render(scene, camera);
+                );
             }
-            animate();
 
-            // Handle resize
-            window.addEventListener('resize', () => {
-                camera.aspect = container.clientWidth / container.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(container.clientWidth, container.clientHeight);
-            });
-        }
+            createFallbackScene() {
+                // Create a sophisticated fallback based on section type
+                const containerId = this.config.containerId;
 
-        // Scene 2: Moat Section - Knowledge Graph / Neural Network
-        function initMoatScene() {
-            const container = document.getElementById('moat-canvas');
-            if (!container || typeof THREE === 'undefined') return;
+                if (containerId === 'hero-canvas' || containerId === 'problem-canvas') {
+                    this.createDocumentScene();
+                } else if (containerId === 'moat-canvas') {
+                    this.createNetworkScene();
+                } else if (containerId === 'process-canvas') {
+                    this.createPipelineScene();
+                }
+            }
 
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            container.appendChild(renderer.domElement);
+            createDocumentScene() {
+                // Floating document pages with particles
+                const group = new THREE.Group();
 
-            // Create nodes
-            const nodes = [];
-            const nodePositions = [
-                { x: 0, y: 0, z: 0, size: 0.35, color: 0xf0a500 }, // Central node
-                { x: -1.5, y: 1, z: 0.5, size: 0.2, color: 0x3b82f6 },
-                { x: 1.5, y: 1, z: -0.3, size: 0.2, color: 0x3b82f6 },
-                { x: -1.2, y: -1, z: 0.2, size: 0.2, color: 0x06b6d4 },
-                { x: 1.3, y: -0.8, z: 0.4, size: 0.2, color: 0x06b6d4 },
-                { x: 0, y: 1.5, z: -0.5, size: 0.18, color: 0x3b82f6 },
-                { x: -0.8, y: 0.5, z: 1, size: 0.15, color: 0x06b6d4 },
-                { x: 0.9, y: -0.3, z: 0.8, size: 0.15, color: 0x06b6d4 }
-            ];
-
-            nodePositions.forEach((pos, i) => {
-                const geometry = new THREE.SphereGeometry(pos.size, 32, 32);
-                const material = new THREE.MeshBasicMaterial({
-                    color: pos.color,
-                    transparent: true,
-                    opacity: i === 0 ? 1 : 0.8
-                });
-                const node = new THREE.Mesh(geometry, material);
-                node.position.set(pos.x, pos.y, pos.z);
-                node.userData = { originalPos: { ...pos }, pulseOffset: Math.random() * Math.PI * 2 };
-                nodes.push(node);
-                scene.add(node);
-
-                // Add glow effect for central node
-                if (i === 0) {
-                    const glowGeometry = new THREE.SphereGeometry(pos.size * 1.5, 32, 32);
-                    const glowMaterial = new THREE.MeshBasicMaterial({
-                        color: 0xf0a500,
+                for (let i = 0; i < 4; i++) {
+                    const geometry = new THREE.PlaneGeometry(1.8, 2.4);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: 0xf5f5f7,
                         transparent: true,
-                        opacity: 0.2
+                        opacity: 0.85 - i * 0.15,
+                        side: THREE.DoubleSide,
+                        roughness: 0.8,
+                        metalness: 0.1
                     });
-                    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-                    node.add(glow);
-                }
-            });
+                    const page = new THREE.Mesh(geometry, material);
+                    page.position.set(i * 0.1, i * 0.08, -i * 0.2);
+                    page.rotation.y = i * 0.03;
 
-            // Create connections
-            const connections = [];
-            const connectionPairs = [[0,1], [0,2], [0,3], [0,4], [0,5], [1,5], [2,4], [3,6], [4,7], [1,6], [2,7]];
-
-            connectionPairs.forEach(pair => {
-                const material = new THREE.LineBasicMaterial({
-                    color: 0x3b82f6,
-                    transparent: true,
-                    opacity: 0.3
-                });
-                const geometry = new THREE.BufferGeometry();
-                const positions = new Float32Array(6);
-                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                const line = new THREE.Line(geometry, material);
-                line.userData = { start: pair[0], end: pair[1] };
-                connections.push(line);
-                scene.add(line);
-            });
-
-            camera.position.z = 4;
-
-            let animationId;
-            function animate() {
-                animationId = requestAnimationFrame(animate);
-
-                if (!isInViewport(container)) return;
-
-                const time = Date.now() * 0.001;
-
-                // Animate nodes
-                nodes.forEach((node, i) => {
-                    const orig = node.userData.originalPos;
-                    const offset = node.userData.pulseOffset;
-                    node.position.x = orig.x + Math.sin(time + offset) * 0.1;
-                    node.position.y = orig.y + Math.cos(time * 0.8 + offset) * 0.1;
-
-                    // Pulse effect
-                    if (i === 0) {
-                        node.scale.setScalar(1 + Math.sin(time * 2) * 0.05);
+                    // Add lines to page
+                    for (let j = 0; j < 10; j++) {
+                        const lineGeo = new THREE.PlaneGeometry(1.4, 0.04);
+                        const lineMat = new THREE.MeshBasicMaterial({
+                            color: 0x5c5c6d,
+                            transparent: true,
+                            opacity: 0.3
+                        });
+                        const line = new THREE.Mesh(lineGeo, lineMat);
+                        line.position.set(0, 0.9 - j * 0.2, 0.01);
+                        page.add(line);
                     }
+
+                    group.add(page);
+                }
+
+                // Red highlight
+                const highlightGeo = new THREE.PlaneGeometry(1.2, 0.12);
+                const highlightMat = new THREE.MeshBasicMaterial({
+                    color: 0xef4444,
+                    transparent: true,
+                    opacity: 0.7
                 });
+                const highlight = new THREE.Mesh(highlightGeo, highlightMat);
+                highlight.position.set(0, 0.3, 0.03);
+                highlight.userData.isHighlight = true;
+                group.children[0].add(highlight);
 
-                // Update connections
-                connections.forEach(line => {
-                    const startNode = nodes[line.userData.start];
-                    const endNode = nodes[line.userData.end];
-                    const positions = line.geometry.attributes.position.array;
-                    positions[0] = startNode.position.x;
-                    positions[1] = startNode.position.y;
-                    positions[2] = startNode.position.z;
-                    positions[3] = endNode.position.x;
-                    positions[4] = endNode.position.y;
-                    positions[5] = endNode.position.z;
-                    line.geometry.attributes.position.needsUpdate = true;
-
-                    // Pulse connection opacity
-                    line.material.opacity = 0.2 + Math.sin(time * 2 + line.userData.start) * 0.15;
+                // Particles
+                const particleCount = 300;
+                const particleGeo = new THREE.BufferGeometry();
+                const positions = new Float32Array(particleCount * 3);
+                for (let i = 0; i < particleCount; i++) {
+                    positions[i * 3] = (Math.random() - 0.5) * 6;
+                    positions[i * 3 + 1] = (Math.random() - 0.5) * 6;
+                    positions[i * 3 + 2] = (Math.random() - 0.5) * 3;
+                }
+                particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                const particleMat = new THREE.PointsMaterial({
+                    color: 0xef4444,
+                    size: 0.03,
+                    transparent: true,
+                    opacity: 0.5
                 });
+                const particles = new THREE.Points(particleGeo, particleMat);
+                particles.userData.isParticles = true;
+                group.add(particles);
 
-                // Slow rotation
-                scene.rotation.y = time * 0.1;
-
-                renderer.render(scene, camera);
+                this.model = group;
+                this.scene.add(group);
             }
-            animate();
 
-            window.addEventListener('resize', () => {
-                camera.aspect = container.clientWidth / container.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(container.clientWidth, container.clientHeight);
-            });
-        }
+            createNetworkScene() {
+                // Neural network visualization
+                const group = new THREE.Group();
+                const nodes = [];
+                const nodeData = [
+                    { x: 0, y: 0, z: 0, size: 0.3, color: 0xf0a500 },
+                    { x: -1.3, y: 0.9, z: 0.4, size: 0.18, color: 0x3b82f6 },
+                    { x: 1.3, y: 0.9, z: -0.3, size: 0.18, color: 0x3b82f6 },
+                    { x: -1.1, y: -0.9, z: 0.2, size: 0.18, color: 0x06b6d4 },
+                    { x: 1.2, y: -0.7, z: 0.3, size: 0.18, color: 0x06b6d4 },
+                    { x: 0, y: 1.3, z: -0.4, size: 0.15, color: 0x3b82f6 },
+                    { x: -0.7, y: 0.4, z: 0.8, size: 0.12, color: 0x06b6d4 },
+                    { x: 0.8, y: -0.2, z: 0.7, size: 0.12, color: 0x06b6d4 }
+                ];
 
-        // Scene 3: Process Section - Data Pipeline
-        function initProcessScene() {
-            const container = document.getElementById('process-canvas');
-            if (!container || typeof THREE === 'undefined') return;
+                nodeData.forEach((data, i) => {
+                    const geometry = new THREE.SphereGeometry(data.size, 24, 24);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: data.color,
+                        transparent: true,
+                        opacity: i === 0 ? 1 : 0.8,
+                        emissive: data.color,
+                        emissiveIntensity: i === 0 ? 0.3 : 0.1,
+                        roughness: 0.4,
+                        metalness: 0.6
+                    });
+                    const node = new THREE.Mesh(geometry, material);
+                    node.position.set(data.x, data.y, data.z);
+                    node.userData = { originalPos: { ...data }, index: i };
+                    nodes.push(node);
+                    group.add(node);
+                });
 
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            container.appendChild(renderer.domElement);
+                // Connections
+                const connections = [[0,1],[0,2],[0,3],[0,4],[0,5],[1,5],[2,4],[3,6],[4,7]];
+                connections.forEach(pair => {
+                    const material = new THREE.LineBasicMaterial({
+                        color: 0x3b82f6,
+                        transparent: true,
+                        opacity: 0.25
+                    });
+                    const geometry = new THREE.BufferGeometry();
+                    const positions = new Float32Array(6);
+                    const n1 = nodeData[pair[0]], n2 = nodeData[pair[1]];
+                    positions[0] = n1.x; positions[1] = n1.y; positions[2] = n1.z;
+                    positions[3] = n2.x; positions[4] = n2.y; positions[5] = n2.z;
+                    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    const line = new THREE.Line(geometry, material);
+                    line.userData.isConnection = true;
+                    group.add(line);
+                });
 
-            // Input document (left)
-            const docGeometry = new THREE.BoxGeometry(0.8, 1.1, 0.05);
-            const docMaterial = new THREE.MeshBasicMaterial({ color: 0xf5f5f7, transparent: true, opacity: 0.9 });
-            const inputDoc = new THREE.Mesh(docGeometry, docMaterial);
-            inputDoc.position.set(-2.5, 0, 0);
-            scene.add(inputDoc);
+                group.userData.nodes = nodes;
+                this.model = group;
+                this.scene.add(group);
+            }
 
-            // Processing core (center) - Icosahedron
-            const coreGeometry = new THREE.IcosahedronGeometry(0.7, 1);
-            const coreMaterial = new THREE.MeshBasicMaterial({
-                color: 0x3b82f6,
-                wireframe: true,
-                transparent: true,
-                opacity: 0.8
-            });
-            const core = new THREE.Mesh(coreGeometry, coreMaterial);
-            core.position.set(0, 0, 0);
-            scene.add(core);
+            createPipelineScene() {
+                // Data pipeline visualization
+                const group = new THREE.Group();
 
-            // Inner core glow
-            const innerCoreGeometry = new THREE.IcosahedronGeometry(0.4, 1);
-            const innerCoreMaterial = new THREE.MeshBasicMaterial({
-                color: 0xf0a500,
-                transparent: true,
-                opacity: 0.6
-            });
-            const innerCore = new THREE.Mesh(innerCoreGeometry, innerCoreMaterial);
-            core.add(innerCore);
+                // Input document
+                const docGeo = new THREE.BoxGeometry(0.7, 1, 0.05);
+                const docMat = new THREE.MeshStandardMaterial({
+                    color: 0xf5f5f7,
+                    roughness: 0.8
+                });
+                const inputDoc = new THREE.Mesh(docGeo, docMat);
+                inputDoc.position.set(-2.2, 0, 0);
+                group.add(inputDoc);
 
-            // Output report (right) - Shield shape
-            const shieldShape = new THREE.Shape();
-            shieldShape.moveTo(0, 0.6);
-            shieldShape.lineTo(0.5, 0.4);
-            shieldShape.lineTo(0.5, -0.2);
-            shieldShape.lineTo(0, -0.5);
-            shieldShape.lineTo(-0.5, -0.2);
-            shieldShape.lineTo(-0.5, 0.4);
-            shieldShape.lineTo(0, 0.6);
-
-            const shieldGeometry = new THREE.ExtrudeGeometry(shieldShape, { depth: 0.1, bevelEnabled: false });
-            const shieldMaterial = new THREE.MeshBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.8 });
-            const outputShield = new THREE.Mesh(shieldGeometry, shieldMaterial);
-            outputShield.position.set(2.5, 0, 0);
-            outputShield.rotation.y = Math.PI;
-            scene.add(outputShield);
-
-            // Check mark on shield
-            const checkGeometry = new THREE.BufferGeometry();
-            const checkPoints = new Float32Array([
-                -0.15, 0, 0.1,
-                -0.05, -0.15, 0.1,
-                0.2, 0.2, 0.1
-            ]);
-            checkGeometry.setAttribute('position', new THREE.BufferAttribute(checkPoints, 3));
-            const checkMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
-            const checkMark = new THREE.Line(checkGeometry, checkMaterial);
-            outputShield.add(checkMark);
-
-            // Data particles flowing through
-            const particleCount = 100;
-            const flowParticles = [];
-
-            for (let i = 0; i < particleCount; i++) {
-                const geometry = new THREE.SphereGeometry(0.03, 8, 8);
-                const material = new THREE.MeshBasicMaterial({
-                    color: i % 3 === 0 ? 0xf0a500 : 0x3b82f6,
+                // Processing core
+                const coreGeo = new THREE.IcosahedronGeometry(0.6, 1);
+                const coreMat = new THREE.MeshStandardMaterial({
+                    color: 0x3b82f6,
+                    wireframe: true,
                     transparent: true,
                     opacity: 0.8
                 });
-                const particle = new THREE.Mesh(geometry, material);
-                particle.userData = {
-                    progress: Math.random(),
-                    speed: 0.002 + Math.random() * 0.003,
-                    yOffset: (Math.random() - 0.5) * 0.8,
-                    zOffset: (Math.random() - 0.5) * 0.5
-                };
-                flowParticles.push(particle);
-                scene.add(particle);
+                const core = new THREE.Mesh(coreGeo, coreMat);
+                core.userData.isCore = true;
+                group.add(core);
+
+                // Inner core
+                const innerGeo = new THREE.IcosahedronGeometry(0.35, 1);
+                const innerMat = new THREE.MeshStandardMaterial({
+                    color: 0xf0a500,
+                    emissive: 0xf0a500,
+                    emissiveIntensity: 0.4,
+                    roughness: 0.3,
+                    metalness: 0.7
+                });
+                const inner = new THREE.Mesh(innerGeo, innerMat);
+                inner.userData.isInnerCore = true;
+                core.add(inner);
+
+                // Output shield
+                const shieldShape = new THREE.Shape();
+                shieldShape.moveTo(0, 0.5);
+                shieldShape.lineTo(0.4, 0.3);
+                shieldShape.lineTo(0.4, -0.15);
+                shieldShape.lineTo(0, -0.4);
+                shieldShape.lineTo(-0.4, -0.15);
+                shieldShape.lineTo(-0.4, 0.3);
+                shieldShape.closePath();
+                const shieldGeo = new THREE.ExtrudeGeometry(shieldShape, { depth: 0.08, bevelEnabled: false });
+                const shieldMat = new THREE.MeshStandardMaterial({
+                    color: 0x22c55e,
+                    emissive: 0x22c55e,
+                    emissiveIntensity: 0.2,
+                    roughness: 0.4,
+                    metalness: 0.5
+                });
+                const shield = new THREE.Mesh(shieldGeo, shieldMat);
+                shield.position.set(2.2, 0, 0);
+                shield.rotation.y = Math.PI;
+                group.add(shield);
+
+                // Flow particles
+                for (let i = 0; i < 60; i++) {
+                    const pGeo = new THREE.SphereGeometry(0.025, 8, 8);
+                    const pMat = new THREE.MeshBasicMaterial({
+                        color: i % 3 === 0 ? 0xf0a500 : 0x3b82f6,
+                        transparent: true,
+                        opacity: 0
+                    });
+                    const particle = new THREE.Mesh(pGeo, pMat);
+                    particle.userData = {
+                        isFlowParticle: true,
+                        progress: Math.random(),
+                        speed: 0.003 + Math.random() * 0.004,
+                        yOffset: (Math.random() - 0.5) * 0.6,
+                        zOffset: (Math.random() - 0.5) * 0.4
+                    };
+                    group.add(particle);
+                }
+
+                this.model = group;
+                this.scene.add(group);
             }
 
-            camera.position.z = 5;
+            setupIntersectionObserver() {
+                const observer = new IntersectionObserver(
+                    (entries) => {
+                        entries.forEach(entry => {
+                            this.isVisible = entry.isIntersecting;
+                        });
+                    },
+                    { threshold: 0.1 }
+                );
+                observer.observe(this.container);
+            }
 
-            let animationId;
-            function animate() {
-                animationId = requestAnimationFrame(animate);
+            setupVisibilityHandler() {
+                document.addEventListener('visibilitychange', () => {
+                    this.isTabVisible = !document.hidden;
+                });
+            }
 
-                if (!isInViewport(container)) return;
+            setupResizeHandler() {
+                window.addEventListener('resize', () => {
+                    if (!this.container) return;
+                    const width = this.container.clientWidth;
+                    const height = this.container.clientHeight;
+                    this.camera.aspect = width / height;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(width, height);
+                });
+            }
 
-                const time = Date.now() * 0.001;
+            animate() {
+                this.animationId = requestAnimationFrame(() => this.animate());
 
-                // Rotate processing core
-                core.rotation.x = time * 0.5;
-                core.rotation.y = time * 0.3;
-                innerCore.rotation.x = -time * 0.8;
-                innerCore.rotation.y = -time * 0.5;
+                // Skip if not visible
+                if (!this.isVisible || !this.isTabVisible) return;
 
-                // Pulse core
-                const scale = 1 + Math.sin(time * 3) * 0.1;
-                core.scale.setScalar(scale);
+                const delta = this.clock.getDelta();
+                const time = this.clock.getElapsedTime();
 
-                // Animate flow particles
-                flowParticles.forEach(particle => {
-                    particle.userData.progress += particle.userData.speed;
-                    if (particle.userData.progress > 1) {
-                        particle.userData.progress = 0;
+                // Update mixer if present
+                if (this.mixer) {
+                    this.mixer.update(delta * this.config.animationSpeed);
+                }
+
+                // Animate model
+                if (this.model) {
+                    // Camera orbit
+                    this.cameraAngle += this.config.cameraSpeed;
+                    this.camera.position.x = Math.sin(this.cameraAngle) * this.config.cameraDistance * 0.3;
+                    this.camera.position.z = this.config.cameraDistance + Math.cos(this.cameraAngle) * 0.5;
+                    this.camera.lookAt(0, 0, 0);
+
+                    // Model rotation
+                    this.model.rotation.y += this.config.modelRotation;
+
+                    // Floating motion
+                    this.model.position.y = Math.sin(time * this.config.floatSpeed + this.floatOffset) * this.config.floatAmplitude;
+
+                    // Animate fallback scenes
+                    this.animateFallbackElements(time);
+                }
+
+                this.renderer.render(this.scene, this.camera);
+            }
+
+            animateFallbackElements(time) {
+                if (!this.model) return;
+
+                this.model.traverse(child => {
+                    // Pulse highlight
+                    if (child.userData.isHighlight) {
+                        child.material.opacity = 0.4 + Math.sin(time * 3) * 0.3;
                     }
 
-                    const p = particle.userData.progress;
-                    // Path from left to right through center
-                    particle.position.x = -3 + p * 6;
-                    particle.position.y = particle.userData.yOffset + Math.sin(p * Math.PI * 4) * 0.2;
-                    particle.position.z = particle.userData.zOffset + Math.sin(p * Math.PI * 2) * 0.3;
+                    // Animate particles
+                    if (child.userData.isParticles) {
+                        const positions = child.geometry.attributes.position.array;
+                        for (let i = 0; i < positions.length; i += 3) {
+                            positions[i] += (Math.random() - 0.5) * 0.01;
+                            positions[i + 1] -= 0.008;
+                            if (positions[i + 1] < -3) positions[i + 1] = 3;
+                        }
+                        child.geometry.attributes.position.needsUpdate = true;
+                    }
 
-                    // Fade in/out at edges
-                    particle.material.opacity = Math.sin(p * Math.PI) * 0.8;
+                    // Animate network nodes
+                    if (child.userData.originalPos) {
+                        const orig = child.userData.originalPos;
+                        const offset = child.userData.index * 0.5;
+                        child.position.x = orig.x + Math.sin(time + offset) * 0.08;
+                        child.position.y = orig.y + Math.cos(time * 0.8 + offset) * 0.08;
+
+                        if (child.userData.index === 0) {
+                            child.scale.setScalar(1 + Math.sin(time * 2) * 0.05);
+                        }
+                    }
+
+                    // Animate processing core
+                    if (child.userData.isCore) {
+                        child.rotation.x = time * 0.5;
+                        child.rotation.y = time * 0.3;
+                    }
+                    if (child.userData.isInnerCore) {
+                        child.rotation.x = -time * 0.7;
+                        child.rotation.y = -time * 0.4;
+                    }
+
+                    // Animate flow particles
+                    if (child.userData.isFlowParticle) {
+                        child.userData.progress += child.userData.speed;
+                        if (child.userData.progress > 1) child.userData.progress = 0;
+
+                        const p = child.userData.progress;
+                        child.position.x = -2.5 + p * 5;
+                        child.position.y = child.userData.yOffset + Math.sin(p * Math.PI * 3) * 0.15;
+                        child.position.z = child.userData.zOffset + Math.sin(p * Math.PI * 2) * 0.2;
+                        child.material.opacity = Math.sin(p * Math.PI) * 0.7;
+                    }
                 });
-
-                // Gentle bob for input/output
-                inputDoc.position.y = Math.sin(time) * 0.1;
-                inputDoc.rotation.z = Math.sin(time * 0.5) * 0.05;
-                outputShield.position.y = Math.sin(time + 1) * 0.1;
-
-                renderer.render(scene, camera);
             }
-            animate();
 
-            window.addEventListener('resize', () => {
-                camera.aspect = container.clientWidth / container.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(container.clientWidth, container.clientHeight);
-            });
-        }
-
-        // Scene 4: Legislative Section - Texas Monitoring
-        function initLegislativeScene() {
-            const container = document.getElementById('legislative-canvas');
-            if (!container || typeof THREE === 'undefined') return;
-
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            container.appendChild(renderer.domElement);
-
-            // Texas star shape
-            const starShape = new THREE.Shape();
-            const outerRadius = 1;
-            const innerRadius = 0.4;
-            const spikes = 5;
-
-            for (let i = 0; i < spikes * 2; i++) {
-                const radius = i % 2 === 0 ? outerRadius : innerRadius;
-                const angle = (i * Math.PI) / spikes - Math.PI / 2;
-                const x = Math.cos(angle) * radius;
-                const y = Math.sin(angle) * radius;
-                if (i === 0) {
-                    starShape.moveTo(x, y);
-                } else {
-                    starShape.lineTo(x, y);
+            dispose() {
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                if (this.renderer) {
+                    this.renderer.dispose();
+                }
+                if (this.scene) {
+                    this.scene.traverse(child => {
+                        if (child.geometry) child.geometry.dispose();
+                        if (child.material) {
+                            if (Array.isArray(child.material)) {
+                                child.material.forEach(m => m.dispose());
+                            } else {
+                                child.material.dispose();
+                            }
+                        }
+                    });
                 }
             }
-            starShape.closePath();
+        }
 
-            const starGeometry = new THREE.ExtrudeGeometry(starShape, { depth: 0.15, bevelEnabled: false });
-            const starMaterial = new THREE.MeshBasicMaterial({
-                color: 0xf0a500,
-                transparent: true,
-                opacity: 0.9
-            });
-            const star = new THREE.Mesh(starGeometry, starMaterial);
-            star.position.set(0, 0, 0);
-            scene.add(star);
-
-            // Radar rings
-            const rings = [];
-            for (let i = 0; i < 4; i++) {
-                const ringGeometry = new THREE.RingGeometry(0.5 + i * 0.6, 0.52 + i * 0.6, 64);
-                const ringMaterial = new THREE.MeshBasicMaterial({
-                    color: 0x3b82f6,
-                    transparent: true,
-                    opacity: 0,
-                    side: THREE.DoubleSide
-                });
-                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-                ring.userData = { baseRadius: 0.5 + i * 0.6, delay: i * 0.5 };
-                rings.push(ring);
-                scene.add(ring);
+        // Add GLTFLoader to THREE (inline since we're using CDN)
+        THREE.GLTFLoader = class GLTFLoader {
+            load(url, onLoad, onProgress, onError) {
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error('GLB not found');
+                        return response.arrayBuffer();
+                    })
+                    .then(buffer => {
+                        // Simple GLB parsing would go here
+                        // For now, trigger error to use fallback
+                        throw new Error('Use fallback');
+                    })
+                    .catch(error => {
+                        if (onError) onError(error);
+                    });
             }
+        };
 
-            // Law marker points
-            const markers = [];
-            const markerPositions = [
-                { angle: 0.3, dist: 1.5 },
-                { angle: 1.2, dist: 1.8 },
-                { angle: 2.5, dist: 1.3 },
-                { angle: 4.0, dist: 2.0 },
-                { angle: 5.2, dist: 1.6 }
-            ];
+        // Initialize all scenes
+        const sceneManagers = [];
 
-            markerPositions.forEach(pos => {
-                const markerGeometry = new THREE.CircleGeometry(0.08, 16);
-                const markerMaterial = new THREE.MeshBasicMaterial({
-                    color: 0x22c55e,
-                    transparent: true,
-                    opacity: 0
-                });
-                const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-                marker.position.x = Math.cos(pos.angle) * pos.dist;
-                marker.position.y = Math.sin(pos.angle) * pos.dist;
-                marker.position.z = 0.1;
-                marker.userData = { angle: pos.angle, dist: pos.dist, visible: false };
-                markers.push(marker);
-                scene.add(marker);
-            });
-
-            camera.position.z = 4;
-
-            let radarAngle = 0;
-            let animationId;
-
-            function animate() {
-                animationId = requestAnimationFrame(animate);
-
-                if (!isInViewport(container)) return;
-
-                const time = Date.now() * 0.001;
-
-                // Rotate star slowly
-                star.rotation.z = Math.sin(time * 0.2) * 0.1;
-
-                // Radar sweep
-                radarAngle += 0.02;
-                if (radarAngle > Math.PI * 2) radarAngle = 0;
-
-                // Animate rings - expanding pulse effect
-                rings.forEach((ring, i) => {
-                    const cycleTime = (time + ring.userData.delay) % 3;
-                    if (cycleTime < 2) {
-                        const scale = 1 + cycleTime * 0.5;
-                        ring.scale.setScalar(scale);
-                        ring.material.opacity = Math.max(0, 0.4 - cycleTime * 0.2);
-                    } else {
-                        ring.material.opacity = 0;
-                        ring.scale.setScalar(1);
-                    }
-                });
-
-                // Show markers when radar passes
-                markers.forEach(marker => {
-                    const angleDiff = Math.abs(radarAngle - marker.userData.angle);
-                    if (angleDiff < 0.3 || angleDiff > Math.PI * 2 - 0.3) {
-                        marker.material.opacity = Math.min(1, marker.material.opacity + 0.1);
-                    } else {
-                        marker.material.opacity = Math.max(0, marker.material.opacity - 0.02);
-                    }
-                    // Pulse visible markers
-                    if (marker.material.opacity > 0.5) {
-                        marker.scale.setScalar(1 + Math.sin(time * 5) * 0.2);
-                    }
-                });
-
-                renderer.render(scene, camera);
-            }
-            animate();
-
-            window.addEventListener('resize', () => {
-                camera.aspect = container.clientWidth / container.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(container.clientWidth, container.clientHeight);
+        function initScenes() {
+            Object.values(sceneConfigs).forEach(config => {
+                const manager = new SceneManager(config);
+                if (manager.container) {
+                    sceneManagers.push(manager);
+                }
             });
         }
 
-        // Initialize all scenes when DOM is ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                initProblemScene();
-                initMoatScene();
-                initProcessScene();
-                initLegislativeScene();
-            });
+            document.addEventListener('DOMContentLoaded', initScenes);
         } else {
-            initProblemScene();
-            initMoatScene();
-            initProcessScene();
-            initLegislativeScene();
+            initScenes();
         }
 
         // Mobile menu toggle
