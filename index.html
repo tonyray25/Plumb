@@ -12,6 +12,7 @@
     <link rel="apple-touch-icon" href="images/favicon.png">
     <!-- Three.js and GSAP for 3D graphics -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
         :root {
@@ -2594,62 +2595,67 @@
         // ============================================
 
         // Configuration for each scene
+        // Model mapping:
+        // - Hero: big_construction_dig_site_and_heaps.glb (dramatic excavation scene)
+        // - Problem: construction_site_.rawscan..glb (raw/chaotic complexity)
+        // - Edge: industrial_buildings_set_-_low_poly_models.glb (clean, organized)
+        // - Process: construction_site_collection.glb (collection = workflow)
         const sceneConfigs = {
             hero: {
                 containerId: 'hero-canvas',
-                modelPath: 'public/3d/hero-scene.glb',
-                cameraDistance: 5,
-                cameraSpeed: 0.0003,
-                modelRotation: 0.0008,
-                modelScale: 1.0,
-                modelPosition: [0, 0, 0],
+                modelPath: 'public/3d/big_construction_dig_site_and_heaps.glb',
+                cameraDistance: 35,           // Large excavation scene needs distance
+                cameraSpeed: 0.0002,          // Slow orbit for dramatic effect
+                modelRotation: 0.0003,        // Very subtle rotation
+                modelScale: 0.8,              // Scale down slightly to fit
+                modelPosition: [0, -5, 0],    // Lower to show ground level
                 animationSpeed: 1.0,
-                ambientIntensity: 0.8,
-                directionalIntensity: 1.0,
-                floatAmplitude: 0.1,
-                floatSpeed: 0.5
+                ambientIntensity: 1.0,        // Bright outdoor lighting
+                directionalIntensity: 1.2,
+                floatAmplitude: 0,            // No floating for construction site
+                floatSpeed: 0
             },
             problem: {
                 containerId: 'problem-canvas',
-                modelPath: 'public/3d/problem-scene.glb',
-                cameraDistance: 6,
+                modelPath: 'public/3d/construction_site_.rawscan..glb',
+                cameraDistance: 30,           // Raw scan needs space
                 cameraSpeed: 0.0002,
-                modelRotation: 0.0005,
-                modelScale: 1.0,
-                modelPosition: [0, 0, 0],
+                modelRotation: 0.0004,
+                modelScale: 0.6,              // Scale to fit container
+                modelPosition: [0, -3, 0],
                 animationSpeed: 0.8,
-                ambientIntensity: 0.6,
-                directionalIntensity: 0.8,
-                floatAmplitude: 0.05,
-                floatSpeed: 0.3
+                ambientIntensity: 0.9,
+                directionalIntensity: 1.0,
+                floatAmplitude: 0,
+                floatSpeed: 0
             },
             edge: {
                 containerId: 'moat-canvas',
-                modelPath: 'public/3d/edge-scene.glb',
-                cameraDistance: 5,
-                cameraSpeed: 0.0004,
-                modelRotation: 0.001,
-                modelScale: 1.0,
-                modelPosition: [0, 0, 0],
+                modelPath: 'public/3d/industrial_buildings_set_-_low_poly_models.glb',
+                cameraDistance: 40,           // Building set needs wider view
+                cameraSpeed: 0.0003,
+                modelRotation: 0.0005,
+                modelScale: 0.5,
+                modelPosition: [0, -4, 0],
                 animationSpeed: 1.0,
-                ambientIntensity: 0.7,
-                directionalIntensity: 0.9,
-                floatAmplitude: 0.08,
-                floatSpeed: 0.4
+                ambientIntensity: 0.95,
+                directionalIntensity: 1.1,
+                floatAmplitude: 0,
+                floatSpeed: 0
             },
             process: {
                 containerId: 'process-canvas',
-                modelPath: 'public/3d/process-scene.glb',
-                cameraDistance: 5.5,
-                cameraSpeed: 0.0003,
-                modelRotation: 0.0006,
-                modelScale: 1.0,
-                modelPosition: [0, 0, 0],
-                animationSpeed: 1.2,
-                ambientIntensity: 0.7,
-                directionalIntensity: 0.85,
-                floatAmplitude: 0.06,
-                floatSpeed: 0.35
+                modelPath: 'public/3d/construction_site_collection.glb',
+                cameraDistance: 32,
+                cameraSpeed: 0.00025,
+                modelRotation: 0.0004,
+                modelScale: 0.55,
+                modelPosition: [0, -3.5, 0],
+                animationSpeed: 1.0,
+                ambientIntensity: 0.95,
+                directionalIntensity: 1.05,
+                floatAmplitude: 0,
+                floatSpeed: 0
             }
         };
 
@@ -2743,8 +2749,20 @@
                     this.config.modelPath,
                     (gltf) => {
                         this.model = gltf.scene;
+
+                        // Apply scale
                         this.model.scale.setScalar(this.config.modelScale);
-                        this.model.position.set(...this.config.modelPosition);
+
+                        // Center model first
+                        const box = new THREE.Box3().setFromObject(this.model);
+                        const center = box.getCenter(new THREE.Vector3());
+                        this.model.position.sub(center);
+
+                        // Then apply config offset (for adjustments like lowering ground level)
+                        this.model.position.x += this.config.modelPosition[0];
+                        this.model.position.y += this.config.modelPosition[1];
+                        this.model.position.z += this.config.modelPosition[2];
+
                         this.scene.add(this.model);
 
                         // Setup animations if present
@@ -2757,17 +2775,20 @@
                             });
                         }
 
-                        // Center model
-                        const box = new THREE.Box3().setFromObject(this.model);
-                        const center = box.getCenter(new THREE.Vector3());
-                        this.model.position.sub(center);
+                        // Log model info for debugging
+                        const size = box.getSize(new THREE.Vector3());
+                        console.log(`Loaded ${this.config.modelPath}: size=${size.x.toFixed(1)}x${size.y.toFixed(1)}x${size.z.toFixed(1)}, animations=${gltf.animations.length}`);
                     },
                     (progress) => {
                         // Loading progress
+                        if (progress.total > 0) {
+                            const percent = (progress.loaded / progress.total * 100).toFixed(0);
+                            console.log(`Loading ${this.config.containerId}: ${percent}%`);
+                        }
                     },
                     (error) => {
                         // GLB not found - create fallback procedural scene
-                        console.log(`GLB not found for ${this.config.containerId}, using fallback`);
+                        console.log(`GLB not found for ${this.config.containerId}, using fallback: ${error.message}`);
                         this.createFallbackScene();
                     }
                 );
@@ -3139,24 +3160,7 @@
             }
         }
 
-        // Add GLTFLoader to THREE (inline since we're using CDN)
-        THREE.GLTFLoader = class GLTFLoader {
-            load(url, onLoad, onProgress, onError) {
-                fetch(url)
-                    .then(response => {
-                        if (!response.ok) throw new Error('GLB not found');
-                        return response.arrayBuffer();
-                    })
-                    .then(buffer => {
-                        // Simple GLB parsing would go here
-                        // For now, trigger error to use fallback
-                        throw new Error('Use fallback');
-                    })
-                    .catch(error => {
-                        if (onError) onError(error);
-                    });
-            }
-        };
+        // GLTFLoader is loaded from CDN (three@0.128.0/examples/js/loaders/GLTFLoader.js)
 
         // Initialize all scenes
         const sceneManagers = [];
