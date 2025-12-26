@@ -744,6 +744,67 @@
             background: var(--black-light);
         }
 
+        /* Workflow 3D Visualization */
+        .workflow-canvas-container {
+            margin: 3rem 0 4rem;
+            position: relative;
+        }
+
+        .workflow-canvas {
+            width: 100%;
+            height: 450px;
+            background: linear-gradient(180deg, rgba(8, 8, 10, 0.3) 0%, rgba(13, 13, 16, 0.5) 100%);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .workflow-canvas canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .workflow-labels {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 1.5rem;
+            padding: 0 5%;
+        }
+
+        .workflow-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .workflow-label .label-icon {
+            font-size: 1.5rem;
+            opacity: 0.8;
+        }
+
+        .workflow-label .label-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        @media (max-width: 768px) {
+            .workflow-canvas {
+                height: 300px;
+            }
+
+            .workflow-labels {
+                padding: 0;
+            }
+
+            .workflow-label .label-text {
+                font-size: 0.75rem;
+            }
+        }
+
         .process-content {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -2022,6 +2083,26 @@
                 Our AI-augmented analysis combines semantic search with construction industry expertise to deliver actionable risk assessments.
             </p>
         </div>
+
+        <!-- Workflow 3D Visualization -->
+        <div class="workflow-canvas-container reveal">
+            <div id="workflow-canvas" class="workflow-canvas"></div>
+            <div class="workflow-labels">
+                <div class="workflow-label">
+                    <span class="label-icon">📄</span>
+                    <span class="label-text">Bid Documents</span>
+                </div>
+                <div class="workflow-label">
+                    <span class="label-icon">🧠</span>
+                    <span class="label-text">AI Analysis</span>
+                </div>
+                <div class="workflow-label">
+                    <span class="label-icon">📊</span>
+                    <span class="label-text">Risk Report</span>
+                </div>
+            </div>
+        </div>
+
         <div class="process-content">
             <div class="process-timeline">
                 <div class="process-step">
@@ -3162,16 +3243,468 @@
 
         // GLTFLoader is loaded from CDN (three@0.128.0/examples/js/loaders/GLTFLoader.js)
 
+        // ============================================
+        // WORKFLOW SCENE MANAGER
+        // Animated 3D visualization: Binder → Quantum Knot → Server
+        // ============================================
+
+        class WorkflowSceneManager {
+            constructor() {
+                this.container = document.getElementById('workflow-canvas');
+                if (!this.container || typeof THREE === 'undefined') return;
+
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.clock = new THREE.Clock();
+                this.isVisible = true;
+                this.isTabVisible = true;
+                this.animationId = null;
+
+                // Models
+                this.binder = null;
+                this.quantumKnot = null;
+                this.serverRack = null;
+                this.mixers = [];
+
+                // Particle systems
+                this.particleStream1 = null; // Binder to Knot
+                this.particleStream2 = null; // Knot to Server
+
+                // Model positions (left to right)
+                this.positions = {
+                    binder: new THREE.Vector3(-8, 0, 0),
+                    quantumKnot: new THREE.Vector3(0, 0, 0),
+                    serverRack: new THREE.Vector3(8, 0, 0)
+                };
+
+                this.init();
+            }
+
+            init() {
+                // Create scene with dark background
+                this.scene = new THREE.Scene();
+                this.scene.fog = new THREE.Fog(0x08080a, 20, 50);
+
+                // Create camera
+                const aspect = this.container.clientWidth / this.container.clientHeight;
+                this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+                this.camera.position.set(0, 4, 22);
+                this.camera.lookAt(0, 0, 0);
+
+                // Create renderer
+                this.renderer = new THREE.WebGLRenderer({
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: 'high-performance'
+                });
+                this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.outputEncoding = THREE.sRGBEncoding;
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 1.2;
+                this.container.appendChild(this.renderer.domElement);
+
+                // Add lighting
+                this.setupLighting();
+
+                // Load models
+                this.loadModels();
+
+                // Create particle streams
+                this.createParticleStreams();
+
+                // Setup observers
+                this.setupIntersectionObserver();
+                this.setupVisibilityHandler();
+                this.setupResizeHandler();
+
+                // Start animation
+                this.animate();
+            }
+
+            setupLighting() {
+                // Ambient light for overall visibility
+                const ambient = new THREE.AmbientLight(0x404060, 0.4);
+                this.scene.add(ambient);
+
+                // Hemisphere light for natural feel
+                const hemiLight = new THREE.HemisphereLight(0x606080, 0x202030, 0.5);
+                this.scene.add(hemiLight);
+
+                // Spotlight on binder (document source) - warm white
+                const spotBinder = new THREE.SpotLight(0xfff5e6, 1.5);
+                spotBinder.position.set(-10, 8, 8);
+                spotBinder.target.position.copy(this.positions.binder);
+                spotBinder.angle = Math.PI / 6;
+                spotBinder.penumbra = 0.5;
+                spotBinder.decay = 1.5;
+                spotBinder.distance = 30;
+                this.scene.add(spotBinder);
+                this.scene.add(spotBinder.target);
+
+                // Spotlight on quantum knot (AI) - amber/gold accent
+                const spotKnot = new THREE.SpotLight(0xf0a500, 2);
+                spotKnot.position.set(0, 10, 10);
+                spotKnot.target.position.copy(this.positions.quantumKnot);
+                spotKnot.angle = Math.PI / 5;
+                spotKnot.penumbra = 0.4;
+                spotKnot.decay = 1.2;
+                spotKnot.distance = 35;
+                this.scene.add(spotKnot);
+                this.scene.add(spotKnot.target);
+
+                // Spotlight on server (results) - cool blue-white
+                const spotServer = new THREE.SpotLight(0xe6f0ff, 1.5);
+                spotServer.position.set(10, 8, 8);
+                spotServer.target.position.copy(this.positions.serverRack);
+                spotServer.angle = Math.PI / 6;
+                spotServer.penumbra = 0.5;
+                spotServer.decay = 1.5;
+                spotServer.distance = 30;
+                this.scene.add(spotServer);
+                this.scene.add(spotServer.target);
+
+                // Rim light from behind for dramatic effect
+                const rimLight = new THREE.DirectionalLight(0x3b82f6, 0.3);
+                rimLight.position.set(0, 5, -10);
+                this.scene.add(rimLight);
+            }
+
+            loadModels() {
+                const loader = new THREE.GLTFLoader();
+
+                // Load Ring Binder (left)
+                loader.load(
+                    'public/3d/document_ring_binder.glb',
+                    (gltf) => {
+                        this.binder = gltf.scene;
+                        this.setupModel(this.binder, this.positions.binder, 0.015);
+
+                        // Setup animations if present
+                        if (gltf.animations && gltf.animations.length > 0) {
+                            const mixer = new THREE.AnimationMixer(this.binder);
+                            gltf.animations.forEach(clip => mixer.clipAction(clip).play());
+                            this.mixers.push(mixer);
+                        }
+                        console.log('Loaded: document_ring_binder.glb');
+                    },
+                    null,
+                    (error) => {
+                        console.log('Binder not found, creating placeholder');
+                        this.binder = this.createPlaceholder(0xf5f5f7, 'binder');
+                        this.binder.position.copy(this.positions.binder);
+                        this.scene.add(this.binder);
+                    }
+                );
+
+                // Load Quantum Knot (center)
+                loader.load(
+                    'public/3d/quantum_knot.glb',
+                    (gltf) => {
+                        this.quantumKnot = gltf.scene;
+                        this.setupModel(this.quantumKnot, this.positions.quantumKnot, 0.8);
+
+                        // Make quantum knot glow
+                        this.quantumKnot.traverse(child => {
+                            if (child.isMesh && child.material) {
+                                child.material = child.material.clone();
+                                child.material.emissive = new THREE.Color(0xf0a500);
+                                child.material.emissiveIntensity = 0.15;
+                            }
+                        });
+
+                        if (gltf.animations && gltf.animations.length > 0) {
+                            const mixer = new THREE.AnimationMixer(this.quantumKnot);
+                            gltf.animations.forEach(clip => mixer.clipAction(clip).play());
+                            this.mixers.push(mixer);
+                        }
+                        console.log('Loaded: quantum_knot.glb');
+                    },
+                    null,
+                    (error) => {
+                        console.log('Quantum knot not found, creating placeholder');
+                        this.quantumKnot = this.createPlaceholder(0xf0a500, 'knot');
+                        this.quantumKnot.position.copy(this.positions.quantumKnot);
+                        this.scene.add(this.quantumKnot);
+                    }
+                );
+
+                // Load Server Rack (right)
+                loader.load(
+                    'public/3d/server_racking_system.glb',
+                    (gltf) => {
+                        this.serverRack = gltf.scene;
+                        this.setupModel(this.serverRack, this.positions.serverRack, 0.012);
+
+                        if (gltf.animations && gltf.animations.length > 0) {
+                            const mixer = new THREE.AnimationMixer(this.serverRack);
+                            gltf.animations.forEach(clip => mixer.clipAction(clip).play());
+                            this.mixers.push(mixer);
+                        }
+                        console.log('Loaded: server_racking_system.glb');
+                    },
+                    null,
+                    (error) => {
+                        console.log('Server rack not found, creating placeholder');
+                        this.serverRack = this.createPlaceholder(0x3b82f6, 'server');
+                        this.serverRack.position.copy(this.positions.serverRack);
+                        this.scene.add(this.serverRack);
+                    }
+                );
+            }
+
+            setupModel(model, position, scale) {
+                model.scale.setScalar(scale);
+
+                // Center the model
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                model.position.sub(center);
+                model.position.add(position);
+
+                this.scene.add(model);
+            }
+
+            createPlaceholder(color, type) {
+                const group = new THREE.Group();
+
+                if (type === 'binder') {
+                    // Create a simple binder shape
+                    const cover = new THREE.Mesh(
+                        new THREE.BoxGeometry(2, 3, 0.3),
+                        new THREE.MeshStandardMaterial({ color: color, roughness: 0.8 })
+                    );
+                    group.add(cover);
+                } else if (type === 'knot') {
+                    // Create a torus knot
+                    const knot = new THREE.Mesh(
+                        new THREE.TorusKnotGeometry(1.2, 0.3, 100, 16),
+                        new THREE.MeshStandardMaterial({
+                            color: color,
+                            emissive: color,
+                            emissiveIntensity: 0.3,
+                            roughness: 0.3,
+                            metalness: 0.7
+                        })
+                    );
+                    group.add(knot);
+                } else if (type === 'server') {
+                    // Create a server rack shape
+                    const rack = new THREE.Mesh(
+                        new THREE.BoxGeometry(1.5, 3.5, 1),
+                        new THREE.MeshStandardMaterial({ color: 0x2a2a3a, roughness: 0.6, metalness: 0.4 })
+                    );
+                    // Add LED lights
+                    for (let i = 0; i < 5; i++) {
+                        const led = new THREE.Mesh(
+                            new THREE.BoxGeometry(0.8, 0.1, 0.02),
+                            new THREE.MeshBasicMaterial({ color: 0x22c55e })
+                        );
+                        led.position.set(0, 1.2 - i * 0.6, 0.52);
+                        rack.add(led);
+                    }
+                    group.add(rack);
+                }
+
+                return group;
+            }
+
+            createParticleStreams() {
+                // Particle stream from Binder to Quantum Knot
+                this.particleStream1 = this.createParticleSystem(
+                    this.positions.binder,
+                    this.positions.quantumKnot,
+                    150,
+                    0xf0a500,  // Amber particles
+                    0.08
+                );
+                this.scene.add(this.particleStream1.points);
+
+                // Particle stream from Quantum Knot to Server
+                this.particleStream2 = this.createParticleSystem(
+                    this.positions.quantumKnot,
+                    this.positions.serverRack,
+                    150,
+                    0x22c55e,  // Green particles (success/output)
+                    0.08
+                );
+                this.scene.add(this.particleStream2.points);
+            }
+
+            createParticleSystem(start, end, count, color, size) {
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(count * 3);
+                const progress = new Float32Array(count);
+                const speeds = new Float32Array(count);
+                const offsets = new Float32Array(count);
+
+                for (let i = 0; i < count; i++) {
+                    progress[i] = Math.random();
+                    speeds[i] = 0.003 + Math.random() * 0.004;
+                    offsets[i] = Math.random() * Math.PI * 2;
+
+                    // Initial position along the path
+                    const t = progress[i];
+                    positions[i * 3] = start.x + (end.x - start.x) * t;
+                    positions[i * 3 + 1] = start.y + (end.y - start.y) * t;
+                    positions[i * 3 + 2] = start.z + (end.z - start.z) * t;
+                }
+
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                const material = new THREE.PointsMaterial({
+                    color: color,
+                    size: size,
+                    transparent: true,
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending,
+                    sizeAttenuation: true
+                });
+
+                const points = new THREE.Points(geometry, material);
+
+                return {
+                    points: points,
+                    geometry: geometry,
+                    progress: progress,
+                    speeds: speeds,
+                    offsets: offsets,
+                    start: start,
+                    end: end
+                };
+            }
+
+            updateParticleStream(stream, time) {
+                const positions = stream.geometry.attributes.position.array;
+                const count = stream.progress.length;
+
+                for (let i = 0; i < count; i++) {
+                    // Update progress
+                    stream.progress[i] += stream.speeds[i];
+                    if (stream.progress[i] > 1) stream.progress[i] = 0;
+
+                    const t = stream.progress[i];
+                    const offset = stream.offsets[i];
+
+                    // Calculate position along path with wave motion
+                    const x = stream.start.x + (stream.end.x - stream.start.x) * t;
+                    const waveY = Math.sin(t * Math.PI * 3 + offset) * 0.5;
+                    const waveZ = Math.cos(t * Math.PI * 2 + offset + time) * 0.3;
+
+                    // Acceleration curve: faster in the middle
+                    const easedT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+                    positions[i * 3] = stream.start.x + (stream.end.x - stream.start.x) * easedT;
+                    positions[i * 3 + 1] = stream.start.y + waveY;
+                    positions[i * 3 + 2] = stream.start.z + waveZ;
+                }
+
+                stream.geometry.attributes.position.needsUpdate = true;
+            }
+
+            setupIntersectionObserver() {
+                const observer = new IntersectionObserver(
+                    (entries) => {
+                        entries.forEach(entry => {
+                            this.isVisible = entry.isIntersecting;
+                        });
+                    },
+                    { threshold: 0.1 }
+                );
+                observer.observe(this.container);
+            }
+
+            setupVisibilityHandler() {
+                document.addEventListener('visibilitychange', () => {
+                    this.isTabVisible = !document.hidden;
+                });
+            }
+
+            setupResizeHandler() {
+                window.addEventListener('resize', () => {
+                    if (!this.container) return;
+                    const width = this.container.clientWidth;
+                    const height = this.container.clientHeight;
+                    this.camera.aspect = width / height;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(width, height);
+                });
+            }
+
+            animate() {
+                this.animationId = requestAnimationFrame(() => this.animate());
+
+                // Skip if not visible
+                if (!this.isVisible || !this.isTabVisible) return;
+
+                const delta = this.clock.getDelta();
+                const time = this.clock.getElapsedTime();
+
+                // Update animation mixers
+                this.mixers.forEach(mixer => mixer.update(delta));
+
+                // Animate quantum knot: rotation and pulsing
+                if (this.quantumKnot) {
+                    this.quantumKnot.rotation.y += 0.008;
+                    this.quantumKnot.rotation.x = Math.sin(time * 0.5) * 0.1;
+
+                    // Pulsing scale effect
+                    const pulse = 1 + Math.sin(time * 2) * 0.05;
+                    this.quantumKnot.scale.setScalar(0.8 * pulse);
+                }
+
+                // Subtle rotation on binder
+                if (this.binder) {
+                    this.binder.rotation.y = Math.sin(time * 0.3) * 0.1;
+                }
+
+                // Subtle animation on server
+                if (this.serverRack) {
+                    this.serverRack.rotation.y = Math.sin(time * 0.2) * 0.05;
+                }
+
+                // Update particle streams
+                if (this.particleStream1) {
+                    this.updateParticleStream(this.particleStream1, time);
+                }
+                if (this.particleStream2) {
+                    this.updateParticleStream(this.particleStream2, time);
+                }
+
+                // Subtle camera movement
+                this.camera.position.x = Math.sin(time * 0.1) * 1.5;
+                this.camera.position.y = 4 + Math.sin(time * 0.15) * 0.5;
+                this.camera.lookAt(0, 0, 0);
+
+                this.renderer.render(this.scene, this.camera);
+            }
+
+            dispose() {
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                if (this.renderer) {
+                    this.renderer.dispose();
+                }
+            }
+        }
+
         // Initialize all scenes
         const sceneManagers = [];
+        let workflowScene = null;
 
         function initScenes() {
+            // Initialize section scenes
             Object.values(sceneConfigs).forEach(config => {
                 const manager = new SceneManager(config);
                 if (manager.container) {
                     sceneManagers.push(manager);
                 }
             });
+
+            // Initialize workflow scene
+            workflowScene = new WorkflowSceneManager();
         }
 
         if (document.readyState === 'loading') {
